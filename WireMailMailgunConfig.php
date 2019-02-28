@@ -103,7 +103,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 
 		$fieldset->add([
 			"type" => "text",
-			"name" => "fromName",
+			"name" => "fromEmailName",
 			"label" => $this->_("Name"),
 			"description" => $this->_("The *from* email name."),
 			"notes" => $this->_("When left empty, defaults to *ProcessWire*."),
