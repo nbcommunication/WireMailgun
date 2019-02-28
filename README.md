@@ -18,41 +18,41 @@ The following are extra methods implemented by this module:
 ### Chainable
 The following methods can be used in a chained statement:
 
-**cc(**_string|array|null_ **`$email`)** - Set a "cc" email address. 
+**cc(**_string|array|null_ **$email)** - Set a "cc" email address. 
 - Only used when `$batchMode` is set to `false`. 
 - Please refer to [WireMail::to()](https://processwire.com/api/ref/wire-mail/to/) for more information on how to use this method.
 
-**bcc(**_string|array|null_ **`$email`)** - Set a "bcc" email address. 
+**bcc(**_string|array|null_ **$email)** - Set a "bcc" email address. 
 - Only used when `$batchMode` is set to `false`. 
 - Please refer to [WireMail::to()](https://processwire.com/api/ref/wire-mail/to/) for more information on how to use this method.
 
-**addData(**_string_ **`$key`**, _string_ **`$value`)** - Add custom data to the email.
+**addData(**_string_ **$key**, _string_ **$value)** - Add custom data to the email.
 - See https://documentation.mailgun.com/en/latest/user_manual.html#attaching-data-to-messages for more information.
 
-**addTag(**_string_ **`$tag`)** - Add a tag to the email. 
+**addTag(**_string_ **$tag)** - Add a tag to the email. 
 - Only ASCII allowed
 - Maximum length of 128 characters
 - There is a maximum number of 3 tags allowed per email.
 
-**addTag(**_array_ **`$tags`)** - Add tags in a batch.
+**addTag(**_array_ **$tags)** - Add tags in a batch.
 
-**setApiKey(**_string_ **`$apiKey`)** - Override the Mailgun API Key module setting.
+**setApiKey(**_string_ **$apiKey)** - Override the Mailgun API Key module setting.
 
-**setBatchMode(**_bool_ **`$batchMode`)** - Enables or disables batch mode.
+**setBatchMode(**_bool_ **$batchMode)** - Enables or disables batch mode.
 - This is on by default, meaning that one email is sent per "to" recipient, and the recipients won't see the other recipients
 - If this is on, any email addresses set by `cc()` and `bcc()` will be ignored
 -  Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. [Read more about batch sending](https://documentation.mailgun.com/user_manual.html#batch-sending).
 
-**setDeliveryTime(**_int_ **`$time`)** - The (unix)time the email should be scheduled for.
+**setDeliveryTime(**_int_ **$time)** - The (unix)time the email should be scheduled for.
 
-**setDomainName(**_string_ **`$domainName`)** - Override the "Domain Name" module setting.
+**setDomainName(**_string_ **$domainName)** - Override the "Domain Name" module setting.
 
-**setTestMode(**_bool_ **`$testMode`)** - Override the "Test Mode" module setting.
+**setTestMode(**_bool_ **$testMode)** - Override the "Test Mode" module setting.
 
-**setTrackOpens(**_bool_ **`$trackOpens`)** - Override "Track Message Opens" module setting on a per-email basis.
+**setTrackOpens(**_bool_ **$trackOpens)** - Override "Track Message Opens" module setting on a per-email basis.
 - Open tracking only works for emails with `bodyHTML()` set
 
-**setTrackClicks(**_bool_ **`$trackClicks`)** - Override "Track Message Clicks" module setting on a per-email basis.
+**setTrackClicks(**_bool_ **$trackClicks)** - Override "Track Message Clicks" module setting on a per-email basis.
 - Click tracking only works for emails with `bodyHTML()` set
 
 ### Other
@@ -60,7 +60,7 @@ The following methods can be used in a chained statement:
 **send()** - Send the email.
 - Returns a positive number (indicating number of emails sent) or 0 on failure.
 
-**validateEmail(**_string_ **`$email`)** - Validates a single address using Mailgun's address validation service.
+**validateEmail(**_string_ **$email)** - Validates a single address using Mailgun's address validation service.
 - Returns an associative array. To return the response as an object, set the second argument to false
 - For more information on what this method returns, see [Mailgun's documentation](https://documentation.mailgun.com/api-email-validation.html#email-validation).
 
