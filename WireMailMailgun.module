@@ -17,8 +17,6 @@
  * @property bool|int $trackClicks
  * @property bool|int $testMode
  * @property bool|int $disableSslCheck
- * 
- * @todo README to include links to previous versions?
  *
  */
 class WireMailMailgun extends WireMail implements Module {
@@ -36,13 +34,13 @@ class WireMailMailgun extends WireMail implements Module {
 			"version" => 100,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "plauclair, geeber, outflux3, chriswthomson",
-			//"href" => "",
+			"href" => "https://github.com/chriswthomson/WireMailMailgun",
 			"singular" => false,
 			"autoload" => false,
 			"icon" => "envelope",
 			"requires" => [
-				"ProcessWire>=3.0.123",
-				"PHP>=5.5.0",
+				"ProcessWire>=3.0.123", // WireTextTools
+				"PHP>=5.5.0", // curl_file_create
 			],
 		];
 	}
