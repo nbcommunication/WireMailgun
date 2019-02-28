@@ -12,7 +12,7 @@
  * @property string $dynamicDomain
  * @property string $apiKeyPublic
  * @property string $fromEmail
- * @property string $fromName
+ * @property string $fromEmailName
  * @property bool|int $trackOpens
  * @property bool|int $trackClicks
  * @property bool|int $testMode
@@ -315,7 +315,7 @@ class WireMailMailgun extends WireMail implements Module {
 
 		// Set default "from" values
 		$fromEmail = $this->fromEmail ? $this->fromEmail : "processwire@{$this->domain}";
-		$fromName = $this->fromName ? $this->fromName : "ProcessWire";
+		$fromName = $this->fromEmailName ? $this->fromEmailName : "ProcessWire";
 
 		// Set manually from WireMail->from()
 		if(!empty($this->mail["from"])) $fromEmail = $this->mail["from"];
