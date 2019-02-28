@@ -34,7 +34,7 @@ The following methods can be used in a chained statement:
 - Maximum length of 128 characters
 - There is a maximum number of 3 tags allowed per email.
 
-**addTag(**_array_ **$tags)** - Add tags in a batch.
+**addTags(**_array_ **$tags)** - Add tags in a batch.
 
 **setApiKey(**_string_ **$apiKey)** - Override the Mailgun API Key module setting.
 
