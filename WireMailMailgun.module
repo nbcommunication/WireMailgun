@@ -1,0 +1,664 @@
+<?php namespace ProcessWire;
+
+/**
+ * WireMail Mailgun
+ *
+ * #pw-summary Extends WireMail to use the Mailgun API for sending emails
+ * #pw-var $mg
+ *
+ * @property string $apiKey
+ * @property string $region
+ * @property string $domain
+ * @property string $dynamicDomain
+ * @property string $apiKeyPublic
+ * @property string $fromEmail
+ * @property string $fromName
+ * @property bool|int $trackOpens
+ * @property bool|int $trackClicks
+ * @property bool|int $testMode
+ * @property bool|int $disableSslCheck
+ * 
+ * @todo README to include links to previous versions?
+ *
+ */
+class WireMailMailgun extends WireMail implements Module {
+
+	/**
+	 * getModuleInfo is a module required by all modules to tell ProcessWire about them
+	 *
+	 * @return array
+	 *
+	 */
+	public static function getModuleInfo() {
+
+		return [
+			"title" => "WireMail Mailgun",
+			"version" => 100,
+			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
+			"author" => "plauclair, geeber, outflux3, chriswthomson",
+			//"href" => "",
+			"singular" => false,
+			"autoload" => false,
+			"icon" => "envelope",
+			"requires" => [
+				"ProcessWire>=3.0.123",
+				"PHP>=5.5.0",
+			],
+		];
+	}
+
+	/**
+	 * The Mailgun API url
+	 *
+	 * @var string
+	 *
+	 */
+	protected $apiUrl;
+
+	/**
+	 * When enabled, emails will be sent to each address
+	 * 
+	 * This emulates the default WireMail to() method behavior.
+	 * See setBatchMode() method of this class for more info.
+	 *
+	 * @var bool
+	 *
+	 */
+	protected $batchMode = true;
+
+	/**
+	 * Custom data for the email to be sent
+	 *
+	 * @var array
+	 *
+	 */
+	protected $customData = [];
+
+	/**
+	 * The Mailgun API HTTP Response Code
+	 *
+	 * @var int
+	 *
+	 */
+	protected $httpCode = 0;
+
+	/**
+	 * An array of recipient variables
+	 * 
+	 * https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending
+	 *
+	 * @var array
+	 *
+	 */
+	protected $recipientVariables = [];
+
+	/**
+	 * Tags for the email to be sent
+	 *
+	 * @var array
+	 *
+	 */
+	protected $tags = [];
+
+	/**
+	 * Initialize the module
+	 *
+	 */
+	public function init() {
+		$this->setApiUrl($this->region);
+		$this->cc();
+		$this->bcc();
+	}
+
+	/**
+	 * Set the email CC address
+	 *
+	 * Each added email addresses appends to any addresses already supplied, unless
+	 * you specify NULL as the email address, in which case it clears them all.
+	 *
+	 * @param string|array|null $email Specify any ONE of the following: 
+	 * - Single email address or "User Name <user@example.com>" string.
+	 * - CSV string of #1. 
+	 * - Non-associative array of #1. 
+	 * - Associative array of (email => name)
+	 * - NULL (default value, to clear out any previously set values)
+	 * @param string $name Optionally provide a TO name, applicable
+	 *	only when specifying #1 (single email) for the first argument. 
+	 * @return WireMail $this
+	 * @throws WireException If any provided emails were invalid
+	 * @see WireMailMailgun::setEmail()
+	 *
+	 */
+	public function cc($email = null, $name = null) {
+		return $this->setEmail("cc", $email, $name);
+	}
+
+	/**
+	 * Set the email BCC address
+	 *
+	 * Each added email addresses appends to any addresses already supplied, unless
+	 * you specify NULL as the email address, in which case it clears them all.
+	 *
+	 * @param string|array|null $email Specify any ONE of the following: 
+	 * - Single email address or "User Name <user@example.com>" string.
+	 * - CSV string of #1. 
+	 * - Non-associative array of #1. 
+	 * - Associative array of (email => name)
+	 * - NULL (default value, to clear out any previously set values)
+	 * @param string $name Optionally provide a TO name, applicable
+	 *	only when specifying #1 (single email) for the first argument. 
+	 * @return WireMail $this
+	 * @throws WireException If any provided emails were invalid
+	 * @see WireMailMailgun::setEmail()
+	 *
+	 */
+	public function bcc($email = null, $name = null) {
+		return $this->setEmail("bcc", $email, $name);
+	}
+
+	/**
+	 * Add custom data to the email
+	 *
+	 * See https://documentation.mailgun.com/en/latest/user_manual.html#attaching-data-to-messages
+	 *
+	 * @param string $key
+	 * @param string $value
+	 * @return WireMail $this
+	 *
+	 */
+	public function addData($key, $value) {
+		$sanitizer = $this->sanitizer;
+		$this->customData[$sanitizer->pageName($key)] = $sanitizer->string($value);
+		return $this;
+	} 
+
+	/**
+	 * Add a tag to the email
+	 *
+	 * Will add up to 3 tags. 
+	 * Any string passed to this function will be converted to ASCII and trimmed to be 128 characters long.
+	 *
+	 * See https://documentation.mailgun.com/user_manual.html#tagging
+	 *
+	 * @param string $tag
+	 * @return WireMail $this
+	 *
+	 */
+	public function addTag($tag) {
+
+		// Convert to ASCII, limit to 128 characters
+		$tag = $this->sanitizer->nameFilter($tag, [" "], "", false, 128);
+
+		if(!empty($tag) and count($this->tags) <= 3) {
+			$this->tags[] = $tag;
+		} else if(count($this->tags) > 3) {
+			$this->log("Error: Tried to use more than 3 tags. Mailgun supports a maximum of 3 at a time.");
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Add tags in a batch
+	 *
+	 * @param array $tags
+	 * @return WireMail $this
+	 * @see WireMailMailgun::addTag()
+	 *
+	 */
+	public function addTags(array $tags) {
+		foreach($tags as $tag) $this->addTag($tag);
+		return $this;
+	}
+	
+	/**
+	 * Override the Mailgun API Key module setting
+	 *
+	 * @param string $apiKey
+	 * @return WireMail $this
+	 *
+	 */
+	public function setApiKey($apiKey) {
+		$this->apiKey = $apiKey;
+		return $this;
+	}
+
+	/**
+	 * Enables or disables batch mode
+	 *
+	 * This is on by default, meaning that all emails in the To field won't see the other recipients.
+	 *
+	 * @param bool $batchMode
+	 * @return WireMail $this
+	 *
+	 */
+	public function setBatchMode(bool $batchMode) {
+		$this->batchMode = $batchMode;
+		return $this;
+	}
+
+	/**
+	 * Set the delivery time as RFC 2822 formatted date string at GMT time
+	 *
+	 * @param int $time
+	 * @return WireMail $this
+	 *
+	 */
+	public function setDeliveryTime($time) {
+		$this->deliveryTime = gmdate("r", $time);
+		return $this;
+	}
+
+	/**
+	 * Override the "Domain Name" module setting
+	 *
+	 * @param string $domainName
+	 * @return WireMail $this
+	 *
+	 */
+	public function setDomainName($domainName) {
+		$this->domain = $domainName;
+		return $this;
+	}
+
+	/**
+	 * Override the "Test Mode" module setting
+	 *
+	 * @param bool $testMode
+	 * @return WireMail $this
+	 *
+	 */
+	public function setTestMode(bool $testMode) {
+		$this->testMode = $testMode;
+		return $this;
+	}
+
+	/**
+	 * Override "Track Message Opens" module setting on a per-email basis
+	 *
+	 * Note: per Mailgun constraints, open tracking will only work on HTML emails
+	 *
+	 * @param bool $trackOpens
+	 * @return WireMail $this
+	 *
+	 */
+	public function setTrackOpens(bool $trackOpens) {
+		$this->trackOpens = $trackOpens;
+		return $this;
+	}
+
+	/**
+	 * Override "Track Message Clicks" module setting on a per-email basis
+	 *
+	 * Note: per Mailgun constraints, click tracking will only work on HTML emails
+	 *
+	 * @param bool $trackClicks
+	 * @return WireMail $this
+	 *
+	 */
+	public function setTrackClicks(bool $trackClicks) {
+		$this->trackClicks = $trackClicks;
+		return $this;
+	}
+
+	/**
+	 * Send the email
+	 *
+	 * Call this method only after you have specified at least the `subject`, `to` and `body`.
+	 *
+	 * @return int Returns a positive number (indicating number of emails sent) or 0 on failure.
+	 * @see WireMail::send()
+	 * @todo Change error messages to those in Mailgun PHP SDK? https://github.com/mailgun/mailgun-php/blob/master/src/Exception/HttpClientException.php
+	 *
+	 */
+	public function ___send() {
+
+		$data = [];
+
+		// Set default "from" values
+		$fromEmail = $this->fromEmail ? $this->fromEmail : "processwire@{$this->domain}";
+		$fromName = $this->fromName ? $this->fromName : "ProcessWire";
+
+		// Set manually from WireMail->from()
+		if(!empty($this->mail["from"])) $fromEmail = $this->mail["from"];
+		if(!empty($this->mail["fromName"])) $fromName = $this->mail["fromName"];
+
+		// Set the From field in the proper format
+		$data["from"] = "{$fromName} <{$fromEmail}>";
+		
+		// Set recipients
+		$data["to"] = $this->getEmails($this->mail["toName"]);
+
+		// Batch mode
+		if($this->batchMode) {
+
+			// Emulate the default to() method behavior. 
+			// Mailgun hard limit on this calling style is 1000 recipients per request
+			
+			$i = 0;
+			foreach($this->mail["toName"] as $email => $name) {
+
+				if(!array_key_exists($email, $this->recipientVariables)) {
+					$this->recipientVariables[$email] = [];
+				}
+
+				$this->recipientVariables[$email]["id"] = ++$i;
+				$this->recipientVariables[$email]["name"] = $name;
+			}
+
+			$data["recipient-variables"] = json_encode($this->recipientVariables);
+
+		} else {
+
+			// Set CC recipients
+			if(count($this->mail["ccName"])) $data["cc"] = $this->getEmails($this->mail["ccName"]);
+
+			// Set BCC recipients
+			if(count($this->mail["bccName"])) $data["bcc"] = $this->getEmails($this->mail["bccName"]);
+		}
+
+		// Reply to
+		if(!empty($this->mail["replyTo"])) {
+
+			$data["h:Reply-To"] = (!empty($this->mail["replyToName"]) ? $this->mail["replyToName"] : $fromName) . 
+				" <{$this->mail["replyTo"]}>";
+		} 
+
+		// Set subject
+		$data["subject"] = $this->mail["subject"];
+	
+		// Set body
+		$body = $this->mail["body"];
+		if(!empty($this->mail["bodyHTML"])) {
+
+			$data["html"] = $this->mail["bodyHTML"];
+
+			if(empty($body)) $body = $this->htmlToText($this->mail["bodyHTML"]);
+
+			// Set tracking
+			$data["o:tracking-opens"] = $this->trackOpens;
+			$data["o:tracking-clicks"] = $this->trackClicks;
+		} 
+		
+		$data["text"] = $body;
+
+		// Set email delivery time
+		if($this->deliveryTime) $data["o:deliverytime"] = $this->deliveryTime;
+
+		// Set test mode
+		$data["o:testmode"] = $this->testMode;
+
+		// Attachments
+		if(count($this->mail["attachments"])) {
+
+			//$this->header("Content-Type", "multipart/form-data");
+
+			$i = 0;
+			foreach($this->mail["attachments"] as $filename => $file) {
+
+				$mime = mime_content_type($file);
+				if($mime) {
+					$data["attachment[$i]"] = curl_file_create($file, $mime, $filename);
+					$i++;
+				}
+			}
+		}
+
+		// Headers
+		if(count($this->mail["header"])) {
+			foreach($this->mail["header"] as $header => $value) {
+				$data["h:{$header}"] = $value;
+			}
+		}
+
+		// Tags
+		if(count($this->tags)) {
+			foreach($this->tags as $index => $tag) {
+				$data["o:tag[$index]"] = $tag;
+			}
+		}
+
+		// Custom Data
+		if(count($this->customData)) {
+			foreach($this->customData as $key => $value) {
+				$data["v:$key"] = $value;
+			}
+		}
+
+		// Perform API request
+		$result = $this->apiRequest($this->apiUrl . $this->getDomainName() . "/messages", [
+			CURLOPT_USERPWD => "api:{$this->apiKey}", 
+			CURLOPT_POST => true,
+			CURLOPT_POSTFIELDS => $data,
+		]);
+
+		if($result === false) {
+
+			return 0;
+
+		} else {
+
+			$result = json_decode($result);
+			$response = $this->getHttpCode();
+			$code = "Code $response";
+			switch($response) {
+				case 200:
+					return $this->batchMode ? count($this->mail["to"]) : 1;
+					break;
+				case 400:
+					$this->log("$code: Bad Request - $result->message.");
+					return 0;
+					break;
+				case 401:
+					$usedKey = (!empty($this->apiKey)) ? "API Key: {$this->apiKey}" : "NO KEY SET";
+					$this->log("$code: Unauthorized - No valid API key provided. ({$usedKey})");
+					return 0;
+					break;
+				case 402:
+					$this->log("$code: Request Failed - Parameters were valid but request failed.");
+					return 0;
+					break;
+				case 404:
+					$this->log("$code: Not Found - The requested item doesn't exist.");
+					return 0;
+					break;
+				case 413:
+					$this->log("$code: Request Entity Too Large - Attachment size is too big.");
+					return 0;
+					break;
+				default:
+					$this->log("$code: Mailgun Server Error.");
+					return 0;
+					break;
+			}
+		}
+	}
+
+	/**
+	 * Validates a single address using Mailgun's address validation service
+	 *
+	 * For more information on what this method returns, visit 
+	 * https://documentation.mailgun.com/api-email-validation.html#email-validation
+	 *
+	 * @param string $email
+	 * @param bool $assoc Default is to return an array (specified by TRUE). If you want an object instead, specify FALSE.
+	 * @return array|object|false Returns an array of validation data from Mailgun
+	 *
+	 */
+	public function validateEmail($email, $assoc = true) {
+
+		// If public API key isn't set, log that
+		if(empty($this->apiKeyPublic)) {
+			$this->log("The Public API Key must be set when using the email validation feature.");
+			return false;
+		}
+
+		// Sanitize email and return false if not valid
+		$email = $this->sanitizer->email($email);
+		if(empty($email))
+			return false;
+
+		// Return API response
+		return json_decode($this->apiRequest("{$this->apiUrl}address/validate?address=" . urlencode($email), [
+			CURLOPT_USERPWD => "api:{$this->apiKeyPublic}",
+		]), $assoc);
+	}
+	
+	/**
+	 * Get the API HTTP response code
+	 *
+	 * @return int 
+	 *
+	 */
+	public function getHttpCode() {
+		return $this->httpCode;
+	}
+
+	/**
+	 * Get the API domain name
+	 * Returns the config setting, or dynamic value for the mail instance if enabled
+	 *
+	 * @return string
+	 *
+	 */
+	public function getDomainName() {
+		return $this->dynamicDomain ? $this->getSenderDomainName() : $this->domain;
+	}
+
+	/**
+	 * Perform a request to the Mailgun API
+	 *
+	 * @param string $url The url to post to
+	 * @param array $options Add cURL options for the request
+	 * @return string|false
+	 *
+	 */
+	protected function apiRequest($url, array $options = []) {
+
+		// Init cURL 
+		$curl = curl_init();
+
+		// Set cURL options
+		curl_setopt_array($curl, [
+			CURLOPT_URL => $url,
+			CURLOPT_HEADER => false,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_SSL_VERIFYPEER => !$this->disableSslCheck,
+		]);
+
+		if(count($options))
+			curl_setopt_array($curl, $options);
+
+		// cURL Request
+		$result = curl_exec($curl);
+
+		if($result === false) {
+
+			// If an error occurred in cURL
+			$this->log("cURL Error: " . curl_error($curl));
+
+		} else {
+
+			$this->httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+		}
+
+		curl_close($curl);
+
+		return $result;
+	}
+
+	/**
+	 * Get emails as CSV string from given "name" $mail variable
+	 *
+	 * @param array $emails
+	 *
+	 */
+	protected function getEmails(array $emails) {
+
+		$items = [];
+		foreach($emails as $email => $name) {
+			$items[] = empty($name) ? $email : "{$name} <{$email}>";
+		}
+
+		return implode(",", $items);
+	}
+
+	/**
+	 * Return the sender domain name
+	 *
+	 * @return string
+	 *
+	 */
+	protected function getSenderDomainName() {
+		return substr(strrchr($this->mail["from"], "@"), 1);
+	}
+
+	/**
+	 * Set or override the Mailgun API URL by region
+	 *
+	 * @param string $region ('us' or 'eu');
+	 *
+	 */
+	protected function setApiUrl($region) {
+		$this->apiUrl = $region == "us" ? "https://api.mailgun.net/v3/" : "https://api.{$region}.mailgun.net/v3/";
+	}
+
+	/**
+	 * Set the email CC/BCC address
+	 *
+	 * Each added email addresses appends to any addresses already supplied, unless
+	 * you specify NULL as the email address, in which case it clears them all.
+	 *
+	 * @param string $type The type of email to set, cc or bcc
+	 * @param string|array|null $email Specify any ONE of the following: 
+	 * - Single email address or "User Name <user@example.com>" string.
+	 * - CSV string of #1. 
+	 * - Non-associative array of #1. 
+	 * - Associative array of (email => name)
+	 * - NULL (default value, to clear out any previously set values)
+	 * @param string $name Optionally provide a TO name, applicable
+	 *	only when specifying #1 (single email) for the first argument. 
+	 * @return WireMail $this
+	 * @throws WireException If any provided emails were invalid
+	 *
+	 */
+	protected function setEmail($type, $email = null, $name = null) {
+
+		if(is_null($email)) {
+			// Clear existing values
+			$this->mail[$type] = [];
+			$this->mail["{$type}Name"] = [];
+			return $this;
+		}
+
+		$emails = is_array($email) ? $email : explode(",", $email);
+		foreach($emails as $key => $value) {
+
+			$typeName = "";
+			if(is_string($key)) {
+
+				// Associative array
+				// Email provided as $key, and $typeName as value
+				$typeEmail = $key;
+				$typeName = $value;
+
+			} else if(strpos($value, "<") !== false && strpos($value, ">") !== false) {
+
+				// Email provided as: "User Name <user@example.com>"
+				list($typeEmail, $typeName) = $this->extractEmailAndName($value);
+
+			} else {
+
+				// Just an email address, possibly with name as a function argument
+				$typeEmail = $value;
+			}
+
+			if(empty($typeName)) $typeName = $name; // Use function argument if not overwritten
+			$typeEmail = $this->sanitizeEmail($typeEmail);
+			$this->mail[$type][$typeEmail] = $typeEmail;
+			$this->mail["{$type}Name"][$typeEmail] = $this->sanitizeHeader($typeName);
+		}
+
+		return $this;
+	}
+}
