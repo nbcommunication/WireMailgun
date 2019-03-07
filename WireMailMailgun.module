@@ -629,6 +629,8 @@ class WireMailMailgun extends WireMail implements Module {
 			return $this;
 		}
 
+		if(empty($email)) return $this;
+
 		$emails = is_array($email) ? $email : explode(",", $email);
 		foreach($emails as $key => $value) {
 
