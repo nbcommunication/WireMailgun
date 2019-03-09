@@ -31,6 +31,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 	public function getInputfields() {
 
 		$inputfields = parent::getInputfields();
+		$mgLink = "[Mailgun](https://mailgun.com/app/domains)";
 
 		// API Setup
 		$fieldset = $this->modules->get("InputfieldFieldset");
@@ -41,7 +42,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"type" => "text",
 			"name" => "apiKey",
 			"label" => $this->_("Key"),
-			"notes" => $this->_("You can find your API Key [on Mailgun](https://mailgun.com/app/domains)."),
+			"notes" => sprintf($this->_("You can find your API Key on %s."), $mgLink),
 			"required" => true,
 			"columnWidth" => 50,
 		]);
@@ -63,7 +64,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"type" => "text",
 			"name" => "domain",
 			"label" => $this->_("Domain Name"),
-			"notes" => $this->_("The domain name must be setup and verified [on Mailgun](https://mailgun.com/app/domains)."),
+			"notes" => sprintf($this->_("The domain name must be setup and verified on %s."), $mgLink),
 			"required" => true,
 			"columnWidth" => 50,
 		]);
@@ -80,8 +81,8 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"type" => "text",
 			"name" => "apiKeyPublic",
 			"label" => $this->_("Mailgun Public API Key"),
-			"description" => $this->_("The Public API Key is only required if you use the `validateEmail()` feature."),
-			"notes" => $this->_("You can find your Public API Key [on Mailgun](https://app.mailgun.com/app/account/security)."),
+			"description" => sprintf($this->_("The Public API Key is only required if you use the %s feature."), "`validateEmail()`"),
+			"notes" => sprintf($this->_("You can find your Public API Key on %s."), "[Mailgun](https://app.mailgun.com/app/account/security)"),
 			"collapsed" => 2,
 		]);
 
@@ -106,7 +107,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"name" => "fromEmailName",
 			"label" => $this->_("Name"),
 			"description" => $this->_("The *from* email name."),
-			"notes" => $this->_("When left empty, defaults to *ProcessWire*."),
+			"notes" => sprintf($this->_("When left empty, defaults to %s."), "*ProcessWire*"),
 			"columnWidth" => 50,
 		]);
 
@@ -121,7 +122,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"type" => "checkbox",
 			"name" => "trackOpens",
 			"label" => $this->_("Track Message Opens"),
-			"notes" => $this->_("Only enabled if `bodyHTML` is passed."),
+			"notes" => sprintf($this->_("Only enabled if %s is passed."), "`bodyHTML`"),
 			"columnWidth" => 50,
 		]);
 
@@ -129,7 +130,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"type" => "checkbox",
 			"name" => "trackClicks",
 			"label" => $this->_("Track Message Clicks"),
-			"notes" => $this->_("Only enabled if `bodyHTML` is passed."),
+			"notes" => sprintf($this->_("Only enabled if %s is passed."), "`bodyHTML`"),
 			"columnWidth" => 50,
 		]);
 
@@ -138,7 +139,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"name" => "testMode",
 			"label" => $this->_("Enable Test Mode"),
 			"description" => $this->_("When this option is enabled, Mailgun will accept messages but won't send them."),
-			"notes" => $this->_("[Click here for more information](https://documentation.mailgun.com/user_manual.html#sending-in-test-mode)."),
+			"notes" => "[" . $this->_("Click here for more information") . "](https://documentation.mailgun.com/user_manual.html#sending-in-test-mode)",
 			"collapsed" => 2,
 		]);
 
