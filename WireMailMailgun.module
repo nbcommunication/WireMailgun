@@ -55,7 +55,7 @@ class WireMailMailgun extends WireMail implements Module {
 
 	/**
 	 * When enabled, emails will be sent to each address
-	 * 
+	 *
 	 * This emulates the default WireMail to() method behavior.
 	 * See setBatchMode() method of this class for more info.
 	 *
@@ -82,7 +82,7 @@ class WireMailMailgun extends WireMail implements Module {
 
 	/**
 	 * An array of recipient variables
-	 * 
+	 *
 	 * https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending
 	 *
 	 * @var array
@@ -114,14 +114,14 @@ class WireMailMailgun extends WireMail implements Module {
 	 * Each added email addresses appends to any addresses already supplied, unless
 	 * you specify NULL as the email address, in which case it clears them all.
 	 *
-	 * @param string|array|null $email Specify any ONE of the following: 
+	 * @param string|array|null $email Specify any ONE of the following:
 	 * - Single email address or "User Name <user@example.com>" string.
-	 * - CSV string of #1. 
-	 * - Non-associative array of #1. 
+	 * - CSV string of #1.
+	 * - Non-associative array of #1.
 	 * - Associative array of (email => name)
 	 * - NULL (default value, to clear out any previously set values)
 	 * @param string $name Optionally provide a TO name, applicable
-	 *	only when specifying #1 (single email) for the first argument. 
+	 *	only when specifying #1 (single email) for the first argument.
 	 * @return WireMail $this
 	 * @throws WireException If any provided emails were invalid
 	 * @see WireMailMailgun::setEmail()
@@ -137,14 +137,14 @@ class WireMailMailgun extends WireMail implements Module {
 	 * Each added email addresses appends to any addresses already supplied, unless
 	 * you specify NULL as the email address, in which case it clears them all.
 	 *
-	 * @param string|array|null $email Specify any ONE of the following: 
+	 * @param string|array|null $email Specify any ONE of the following:
 	 * - Single email address or "User Name <user@example.com>" string.
-	 * - CSV string of #1. 
-	 * - Non-associative array of #1. 
+	 * - CSV string of #1.
+	 * - Non-associative array of #1.
 	 * - Associative array of (email => name)
 	 * - NULL (default value, to clear out any previously set values)
 	 * @param string $name Optionally provide a TO name, applicable
-	 *	only when specifying #1 (single email) for the first argument. 
+	 *	only when specifying #1 (single email) for the first argument.
 	 * @return WireMail $this
 	 * @throws WireException If any provided emails were invalid
 	 * @see WireMailMailgun::setEmail()
@@ -168,12 +168,12 @@ class WireMailMailgun extends WireMail implements Module {
 		$sanitizer = $this->sanitizer;
 		$this->customData[$sanitizer->pageName($key)] = $sanitizer->string($value);
 		return $this;
-	} 
+	}
 
 	/**
 	 * Add a tag to the email
 	 *
-	 * Will add up to 3 tags. 
+	 * Will add up to 3 tags.
 	 * Any string passed to this function will be converted to ASCII and trimmed to be 128 characters long.
 	 *
 	 * See https://documentation.mailgun.com/user_manual.html#tagging
@@ -190,7 +190,7 @@ class WireMailMailgun extends WireMail implements Module {
 		if(!empty($tag) and count($this->tags) <= 3) {
 			$this->tags[] = $tag;
 		} else if(count($this->tags) > 3) {
-			$this->log("Error: Tried to use more than 3 tags. Mailgun supports a maximum of 3 at a time.");
+			$this->log($this->_("Error: Tried to use more than 3 tags. Mailgun supports a maximum of 3 at a time."));
 		}
 
 		return $this;
@@ -208,7 +208,7 @@ class WireMailMailgun extends WireMail implements Module {
 		foreach($tags as $tag) $this->addTag($tag);
 		return $this;
 	}
-	
+
 	/**
 	 * Override the Mailgun API Key module setting
 	 *
@@ -323,61 +323,49 @@ class WireMailMailgun extends WireMail implements Module {
 
 		// Set the From field in the proper format
 		$data["from"] = "{$fromName} <{$fromEmail}>";
-		
+
 		// Set recipients
 		$data["to"] = $this->getEmails($this->mail["toName"]);
 
 		// Batch mode
 		if($this->batchMode) {
-
-			// Emulate the default to() method behavior. 
+			// Emulate the default to() method behavior.
 			// Mailgun hard limit on this calling style is 1000 recipients per request
-			
 			$i = 0;
 			foreach($this->mail["toName"] as $email => $name) {
-
 				if(!array_key_exists($email, $this->recipientVariables)) {
 					$this->recipientVariables[$email] = [];
 				}
-
 				$this->recipientVariables[$email]["id"] = ++$i;
 				$this->recipientVariables[$email]["name"] = $name;
 			}
-
 			$data["recipient-variables"] = json_encode($this->recipientVariables);
-
 		} else {
-
 			// Set CC recipients
 			if(count($this->mail["ccName"])) $data["cc"] = $this->getEmails($this->mail["ccName"]);
-
 			// Set BCC recipients
 			if(count($this->mail["bccName"])) $data["bcc"] = $this->getEmails($this->mail["bccName"]);
 		}
 
 		// Reply to
 		if(!empty($this->mail["replyTo"])) {
-
-			$data["h:Reply-To"] = (!empty($this->mail["replyToName"]) ? $this->mail["replyToName"] : $fromName) . 
+			$data["h:Reply-To"] = (!empty($this->mail["replyToName"]) ? $this->mail["replyToName"] : $fromName) .
 				" <{$this->mail["replyTo"]}>";
-		} 
+		}
 
 		// Set subject
 		$data["subject"] = $this->mail["subject"];
-	
+
 		// Set body
 		$body = $this->mail["body"];
 		if(!empty($this->mail["bodyHTML"])) {
-
 			$data["html"] = $this->mail["bodyHTML"];
-
 			if(empty($body)) $body = $this->htmlToText($this->mail["bodyHTML"]);
-
 			// Set tracking
 			$data["o:tracking-opens"] = $this->trackOpens;
 			$data["o:tracking-clicks"] = $this->trackClicks;
-		} 
-		
+		}
+
 		$data["text"] = $body;
 
 		// Set email delivery time
@@ -388,12 +376,9 @@ class WireMailMailgun extends WireMail implements Module {
 
 		// Attachments
 		if(count($this->mail["attachments"])) {
-
-			//$this->header("Content-Type", "multipart/form-data");
-
+			$this->header("Content-Type", "multipart/form-data");
 			$i = 0;
 			foreach($this->mail["attachments"] as $filename => $file) {
-
 				$mime = mime_content_type($file);
 				if($mime) {
 					$data["attachment[$i]"] = curl_file_create($file, $mime, $filename);
@@ -425,47 +410,44 @@ class WireMailMailgun extends WireMail implements Module {
 
 		// Perform API request
 		$result = $this->apiRequest($this->apiUrl . $this->getDomainName() . "/messages", [
-			CURLOPT_USERPWD => "api:{$this->apiKey}", 
+			CURLOPT_USERPWD => "api:{$this->apiKey}",
 			CURLOPT_POST => true,
 			CURLOPT_POSTFIELDS => $data,
 		]);
 
 		if($result === false) {
-
 			return 0;
-
 		} else {
-
 			$result = json_decode($result);
 			$response = $this->getHttpCode();
-			$code = "Code $response";
+			$code = sprintf($this->_("Code %d"), $response) . ": ";
 			switch($response) {
 				case 200:
 					return $this->batchMode ? count($this->mail["to"]) : 1;
 					break;
 				case 400:
-					$this->log("$code: Bad Request - $result->message.");
+					$this->log($code . $this->_("Bad Request") . " - " . $result->message);
 					return 0;
 					break;
 				case 401:
 					$usedKey = (!empty($this->apiKey)) ? "API Key: {$this->apiKey}" : "NO KEY SET";
-					$this->log("$code: Unauthorized - No valid API key provided. ({$usedKey})");
+					$this->log($code . $this->_("Unauthorized - No valid API key provided.") . " ({$usedKey})");
 					return 0;
 					break;
 				case 402:
-					$this->log("$code: Request Failed - Parameters were valid but request failed.");
+					$this->log($code . $this->_("Request Failed - Parameters were valid but request failed."));
 					return 0;
 					break;
 				case 404:
-					$this->log("$code: Not Found - The requested item doesn't exist.");
+					$this->log($code . $this->_("Not Found - The requested item doesn't exist."));
 					return 0;
 					break;
 				case 413:
-					$this->log("$code: Request Entity Too Large - Attachment size is too big.");
+					$this->log($code . $this->_("Request Entity Too Large - Attachment size is too big."));
 					return 0;
 					break;
 				default:
-					$this->log("$code: Mailgun Server Error.");
+					$this->log($code . $this->_("Mailgun Server Error."));
 					return 0;
 					break;
 			}
@@ -475,7 +457,7 @@ class WireMailMailgun extends WireMail implements Module {
 	/**
 	 * Validates a single address using Mailgun's address validation service
 	 *
-	 * For more information on what this method returns, visit 
+	 * For more information on what this method returns, visit
 	 * https://documentation.mailgun.com/api-email-validation.html#email-validation
 	 *
 	 * @param string $email
@@ -487,7 +469,7 @@ class WireMailMailgun extends WireMail implements Module {
 
 		// If public API key isn't set, log that
 		if(empty($this->apiKeyPublic)) {
-			$this->log("The Public API Key must be set when using the email validation feature.");
+			$this->log($this->_("The Public API Key must be set when using the email validation feature."));
 			return false;
 		}
 
@@ -501,11 +483,11 @@ class WireMailMailgun extends WireMail implements Module {
 			CURLOPT_USERPWD => "api:{$this->apiKeyPublic}",
 		]), $assoc);
 	}
-	
+
 	/**
 	 * Get the API HTTP response code
 	 *
-	 * @return int 
+	 * @return int
 	 *
 	 */
 	public function getHttpCode() {
@@ -533,7 +515,7 @@ class WireMailMailgun extends WireMail implements Module {
 	 */
 	protected function apiRequest($url, array $options = []) {
 
-		// Init cURL 
+		// Init cURL
 		$curl = curl_init();
 
 		// Set cURL options
@@ -544,19 +526,15 @@ class WireMailMailgun extends WireMail implements Module {
 			CURLOPT_SSL_VERIFYPEER => !$this->disableSslCheck,
 		]);
 
-		if(count($options))
-			curl_setopt_array($curl, $options);
+		if(count($options)) curl_setopt_array($curl, $options);
 
 		// cURL Request
 		$result = curl_exec($curl);
 
 		if($result === false) {
-
 			// If an error occurred in cURL
-			$this->log("cURL Error: " . curl_error($curl));
-
+			$this->log($this->_("cURL Error") . ": " . curl_error($curl));
 		} else {
-
 			$this->httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 		}
 
@@ -572,12 +550,10 @@ class WireMailMailgun extends WireMail implements Module {
 	 *
 	 */
 	protected function getEmails(array $emails) {
-
 		$items = [];
 		foreach($emails as $email => $name) {
 			$items[] = empty($name) ? $email : "{$name} <{$email}>";
 		}
-
 		return implode(",", $items);
 	}
 
@@ -608,14 +584,14 @@ class WireMailMailgun extends WireMail implements Module {
 	 * you specify NULL as the email address, in which case it clears them all.
 	 *
 	 * @param string $type The type of email to set, cc or bcc
-	 * @param string|array|null $email Specify any ONE of the following: 
+	 * @param string|array|null $email Specify any ONE of the following:
 	 * - Single email address or "User Name <user@example.com>" string.
-	 * - CSV string of #1. 
-	 * - Non-associative array of #1. 
+	 * - CSV string of #1.
+	 * - Non-associative array of #1.
 	 * - Associative array of (email => name)
 	 * - NULL (default value, to clear out any previously set values)
 	 * @param string $name Optionally provide a TO name, applicable
-	 *	only when specifying #1 (single email) for the first argument. 
+	 *	only when specifying #1 (single email) for the first argument.
 	 * @return WireMail $this
 	 * @throws WireException If any provided emails were invalid
 	 *
@@ -636,19 +612,14 @@ class WireMailMailgun extends WireMail implements Module {
 
 			$typeName = "";
 			if(is_string($key)) {
-
 				// Associative array
 				// Email provided as $key, and $typeName as value
 				$typeEmail = $key;
 				$typeName = $value;
-
 			} else if(strpos($value, "<") !== false && strpos($value, ">") !== false) {
-
 				// Email provided as: "User Name <user@example.com>"
 				list($typeEmail, $typeName) = $this->extractEmailAndName($value);
-
 			} else {
-
 				// Just an email address, possibly with name as a function argument
 				$typeEmail = $value;
 			}
