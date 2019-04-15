@@ -31,7 +31,7 @@ class WireMailMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun",
-			"version" => 100,
+			"version" => 101,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "plauclair, geeber, outflux3, chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailMailgun",
@@ -79,6 +79,14 @@ class WireMailMailgun extends WireMail implements Module {
 	 *
 	 */
 	protected $httpCode = 0;
+
+	/**
+	 * An array of inline images
+	 *
+	 * @var array
+	 *
+	 */
+	protected $inline = [];
 
 	/**
 	 * An array of recipient variables
@@ -167,6 +175,23 @@ class WireMailMailgun extends WireMail implements Module {
 	public function addData($key, $value) {
 		$sanitizer = $this->sanitizer;
 		$this->customData[$sanitizer->pageName($key)] = $sanitizer->string($value);
+		return $this;
+	}
+
+
+	/**
+	 * Add an inline image for referencing in HTML
+	 *
+	 * See https://documentation.mailgun.com/en/latest/user_manual.html#sending-inline-images
+	 *
+	 * @param string $file
+	 * @param string filename
+	 * @return WireMail $this
+	 *
+	 */
+	public function addInlineImage($file, $filename = null) {
+		if(is_null($filename)) $filename = end(explode("/", $file));
+		$this->inline[$filename] = $file;
 		return $this;
 	}
 
@@ -382,6 +407,18 @@ class WireMailMailgun extends WireMail implements Module {
 				$mime = mime_content_type($file);
 				if($mime) {
 					$data["attachment[$i]"] = curl_file_create($file, $mime, $filename);
+					$i++;
+				}
+			}
+		}
+
+		// Inline images
+		if(count($this->inline)) {
+			$i = 0;
+			foreach($this->inline as $filename => $file) {
+				$mime = mime_content_type($file);
+				if($mime) {
+					$data["inline[$i]"] = curl_file_create($file, $mime, $filename);
 					$i++;
 				}
 			}
