@@ -29,6 +29,10 @@ The following methods can be used in a chained statement:
 **addData(**_string_ **$key**, _string_ **$value)** - Add custom data to the email.
 - See https://documentation.mailgun.com/en/latest/user_manual.html#attaching-data-to-messages for more information.
 
+**addInlineImage(**_string_ **$file**, _string_ **$filename)** - Add an inline image for referencing in HTML. 
+Images should be referenced like so: `<img src="cid:$filename">`
+- See https://documentation.mailgun.com/en/latest/user_manual.html#sending-inline-images for more information.
+
 **addTag(**_string_ **$tag)** - Add a tag to the email. 
 - Only ASCII allowed
 - Maximum length of 128 characters
@@ -106,6 +110,7 @@ $mg->to([
 $mg->cc("cc@domain.com")
 	->bcc(["bcc@domain.com", "bcc2@domain.com"])
 	->addData("key", "value") // Custom X-Mailgun-Variables data
+	->addInlineImage($pageimage->filename) // Remember to add <img src="cid:$pageimage->basename"> to the HTML
 	->addTag("tag1") // Add a single tag
 	->addTags(["tag2", "tag3"]) // Add tags in a batch
 	->setBatchMode(false) // A single email will be sent, both "to" recipients shown
