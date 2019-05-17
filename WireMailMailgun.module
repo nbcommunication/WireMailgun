@@ -31,7 +31,7 @@ class WireMailMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun",
-			"version" => 101,
+			"version" => 102,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "plauclair, geeber, outflux3, chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailMailgun",
@@ -173,7 +173,7 @@ class WireMailMailgun extends WireMail implements Module {
 	 *
 	 */
 	public function addData($key, $value) {
-		$sanitizer = $this->sanitizer;
+		$sanitizer = $this->wire("sanitizer");
 		$this->customData[$sanitizer->pageName($key)] = $sanitizer->string($value);
 		return $this;
 	}
@@ -210,7 +210,10 @@ class WireMailMailgun extends WireMail implements Module {
 	public function addTag($tag) {
 
 		// Convert to ASCII, limit to 128 characters
-		$tag = $this->sanitizer->nameFilter($tag, [" "], "", false, 128);
+		$tag = $this->wire("sanitizer")->truncate(filter_var($tag, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH), [
+			"maxLength" => 128,
+			"more" => "",
+		]);
 
 		if(!empty($tag) and count($this->tags) <= 3) {
 			$this->tags[] = $tag;
@@ -511,7 +514,7 @@ class WireMailMailgun extends WireMail implements Module {
 		}
 
 		// Sanitize email and return false if not valid
-		$email = $this->sanitizer->email($email);
+		$email = $this->wire("sanitizer")->email($email);
 		if(empty($email))
 			return false;
 
