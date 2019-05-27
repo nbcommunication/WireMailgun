@@ -351,6 +351,7 @@ class WireMailMailgun extends WireMail implements Module {
 
 		// Set the From field in the proper format
 		$data["from"] = "{$fromName} <{$fromEmail}>";
+    		$data["h:sender"] = $data["from"];
 
 		// Set recipients
 		$data["to"] = $this->getEmails($this->mail["toName"]);
