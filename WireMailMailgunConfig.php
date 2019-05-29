@@ -1,4 +1,4 @@
-<?php namespace ProcessWire;
+<?php
 
 /**
  * WireMail Mailgun Configuration
@@ -30,11 +30,13 @@ class WireMailMailgunConfig extends ModuleConfig {
 	 */
 	public function getInputfields() {
 
+		$modules = $this->wire("modules");
 		$inputfields = parent::getInputfields();
+
 		$mgLink = "[Mailgun](https://mailgun.com/app/domains)";
 
 		// API Setup
-		$fieldset = $this->modules->get("InputfieldFieldset");
+		$fieldset = $modules->get("InputfieldFieldset");
 		$fieldset->label = $this->_("API Setup");
 		$fieldset->icon = "key";
 
@@ -44,20 +46,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"label" => $this->_("Key"),
 			"notes" => sprintf($this->_("You can find your API Key on %s."), $mgLink),
 			"required" => true,
-			"columnWidth" => 50,
-		]);
-
-		$fieldset->add([
-			"type" => "radios",
-			"name" => "region",
-			"label" => $this->_("Region"),
-			"required" => true,
-			"columnWidth" => 50,
-			"optionColumns" => 1,
-			"options" => [
-				"us" => "US",
-				"eu" => "EU",
-			],
+			"columnWidth" => 40,
 		]);
 
 		$fieldset->add([
@@ -66,15 +55,17 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"label" => $this->_("Domain Name"),
 			"notes" => sprintf($this->_("The domain name must be setup and verified on %s."), $mgLink),
 			"required" => true,
-			"columnWidth" => 50,
+			"columnWidth" => 40,
 		]);
 
 		$fieldset->add([
-			"type" => "checkbox",
-			"name" => "dynamicDomain",
-			"label" => $this->_("Use Dynamic Domains"),
-			"notes" => $this->_("Uses email sender/from domain, ignores config setting."),
-			"columnWidth" => 50,
+			"type" => "radios",
+			"name" => "region",
+			"label" => $this->_("Region"),
+			"required" => true,
+			"columnWidth" => 20,
+			"optionColumns" => 1,
+			"options" => $modules->get("WireMailMailgun")::regions,
 		]);
 
 		$fieldset->add([
@@ -89,7 +80,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 		$inputfields->add($fieldset);
 
 		// Default Sender
-		$fieldset = $this->modules->get("InputfieldFieldset");
+		$fieldset = $modules->get("InputfieldFieldset");
 		$fieldset->label = $this->_("Default Sender");
 		$fieldset->icon = "envelope";
 
@@ -114,7 +105,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 		$inputfields->add($fieldset);
 
 		// Options
-		$fieldset = $this->modules->get("InputfieldFieldset");
+		$fieldset = $modules->get("InputfieldFieldset");
 		$fieldset->label = $this->_("Options");
 		$fieldset->icon = "cog";
 
@@ -136,10 +127,18 @@ class WireMailMailgunConfig extends ModuleConfig {
 
 		$fieldset->add([
 			"type" => "checkbox",
+			"name" => "dynamicDomain",
+			"label" => $this->_("Enable Dynamic Domains"),
+			"description" => $this->_("When enabled, the *from* domain is used, ignoring the default **Domain Name** config setting."),
+			"notes" => $this->_("The *from* domain also needs to be a verified Mailgun domain, preferably with the same API key."),
+			"collapsed" => 2,
+		]);
+
+		$fieldset->add([
+			"type" => "checkbox",
 			"name" => "testMode",
 			"label" => $this->_("Enable Test Mode"),
-			"description" => $this->_("When this option is enabled, Mailgun will accept messages but won't send them."),
-			"notes" => "[" . $this->_("Click here for more information") . "](https://documentation.mailgun.com/user_manual.html#sending-in-test-mode)",
+			"description" => $this->_("When enabled, Mailgun will accept messages but won't send them."),
 			"collapsed" => 2,
 		]);
 
