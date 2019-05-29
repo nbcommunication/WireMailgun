@@ -18,22 +18,23 @@ The following are extra methods implemented by this module:
 ### Chainable
 The following methods can be used in a chained statement:
 
-**cc(**_string|array|null_ **$email)** - Set a "cc" email address. 
-- Only used when `$batchMode` is set to `false`. 
+**cc(**_string|array|null_ **$email)** - Set a "cc" email address.
+- Only used when `$batchMode` is set to `false`.
 - Please refer to [WireMail::to()](https://processwire.com/api/ref/wire-mail/to/) for more information on how to use this method.
 
-**bcc(**_string|array|null_ **$email)** - Set a "bcc" email address. 
-- Only used when `$batchMode` is set to `false`. 
+**bcc(**_string|array|null_ **$email)** - Set a "bcc" email address.
+- Only used when `$batchMode` is set to `false`.
 - Please refer to [WireMail::to()](https://processwire.com/api/ref/wire-mail/to/) for more information on how to use this method.
 
 **addData(**_string_ **$key**, _string_ **$value)** - Add custom data to the email.
 - See https://documentation.mailgun.com/en/latest/user_manual.html#attaching-data-to-messages for more information.
 
-**addInlineImage(**_string_ **$file**, _string_ **$filename)** - Add an inline image for referencing in HTML. 
-Images should be referenced like so: `<img src="cid:$filename">`
+**addInlineImage(**_string_ **$file**, _string_ **$filename)** - Add an inline image for referencing in HTML
+- Reference using "cid:" e.g. `<img src='cid:filename.ext'>`
+- Requires `curl_file_create()` (PHP >= 5.5.0)
 - See https://documentation.mailgun.com/en/latest/user_manual.html#sending-inline-images for more information.
 
-**addTag(**_string_ **$tag)** - Add a tag to the email. 
+**addTag(**_string_ **$tag)** - Add a tag to the email.
 - Only ASCII allowed
 - Maximum length of 128 characters
 - There is a maximum number of 3 tags allowed per email.
@@ -49,7 +50,15 @@ Images should be referenced like so: `<img src="cid:$filename">`
 
 **setDeliveryTime(**_int_ **$time)** - The (unix)time the email should be scheduled for.
 
-**setDomainName(**_string_ **$domainName)** - Override the "Domain Name" module setting.
+**setDomainName(**_string_ **$domain)** - Override the "Domain Name" module setting.
+
+**setRegion(**_string_ **$region)** - Override the "Region" module setting.
+- Valid regions are "us" and "eu"
+- Fails silently if an invalid region is passed
+
+**setSender(**_string_ **$domain**, _string_ **$key)** - Set a different API sender than the default.
+- The third argument is `$region` which is optional
+- A shortcut for calling `setDomainName()`, `setApiKey()` and `setRegion()`
 
 **setTestMode(**_bool_ **$testMode)** - Override the "Test Mode" module setting.
 
@@ -71,16 +80,13 @@ Images should be referenced like so: `<img src="cid:$filename">`
 **getHttpCode()** - Get the API HTTP response code.
 - A response code of `200` indicates a successful response
 
-**getDomainName()** - Get the API domain name.
-- Returns the config setting, or dynamic value for the mail instance if this is enabled
-
 ## Examples
 
 ### Basic Example
 Send an email:
 
 ```php
-$mg = $mail->new();
+$mg = $mail->new(); // wireMail() for ProcessWire < 3.0.123
 $sent = $mg->to("user@domain.com")
 	->from("you@company.com")
 	->subject("Message Subject")
@@ -95,26 +101,27 @@ $mg = $mail->new();
 
 // WireMail methods
 $mg->to([
-		"user@domain.com" => "A User", 
+		"user@domain.com" => "A User",
 		"user2@domain.com" => "Another User",
 	])
 	->from("you@company.com", "Company Name")
-	->replyTo("reply@company.com", "Company Name")
+	->replyTo("reply@company.com", "Company Name") // ProcessWire >= 3.0.96
 	->subject("Message Subject")
 	->bodyHTML("<p>Message Body</p>") // A text version will be automatically created
 	->header("key1", "value1")
-	->headers(["key2" => "value2"])
-	->attachment("/path/to/file.ext", "filename.ext");
+	->headers(["key2" => "value2"]) // ProcessWire >= 3.0.96
+	->attachment("/path/to/file.ext", "filename.ext"); // ProcessWire >= 2.8.62
 
 // WireMailMailgun methods
 $mg->cc("cc@domain.com")
 	->bcc(["bcc@domain.com", "bcc2@domain.com"])
 	->addData("key", "value") // Custom X-Mailgun-Variables data
-	->addInlineImage($pageimage->filename) // Remember to add <img src="cid:$pageimage->basename"> to the HTML
+	->addInlineImage("/path/to/file-inline.jpg", "filename-inline.jpg") // Add inline image
 	->addTag("tag1") // Add a single tag
 	->addTags(["tag2", "tag3"]) // Add tags in a batch
 	->setBatchMode(false) // A single email will be sent, both "to" recipients shown
 	->setDeliveryTime(time() + 3600) // The email will be delivered in an hour
+	->setSender($domain, $key, "eu") // Use a different domain to send, this one in the EU region
 	->setTestMode(true) // Mailgun won't actually send the email
 	->setTrackOpens(false) // Disable tracking opens
 	->setTrackClicks(false); // Disable tracking clicks
@@ -141,7 +148,7 @@ Please note: To validate an email address, your Mailgun Public API Key must be a
 ## Other Versions and Backward Compatibility
 This module was initally developed by [plauclair](https://github.com/plauclair/), with further development from [gebeer](https://github.com/gebeer) and [outflux3](https://github.com/outflux3/). This module is a rewrite of outflux3's version, bringing the module more in line with ProcessWire conventions and [coding style guide](https://processwire.com/docs/more/coding-style-guide/) and adding some more features. This module is not compatible with these other versions, so please only use it if beginning a new project. That said, a simple existing implementation would not require much work to upgrade and test.
 
-This module requires Processwire 3.0.123 and above. Should you wish to use WireMailMailgun on older ProcessWire versions not supported by this version of the module, you should install one of the following:
+The other versions of WireMailMailgun can be found here:
 - https://github.com/plauclair/WireMailMailgun
 - https://github.com/gebeer/WireMailMailgun
 - https://github.com/outflux3/WireMailMailgun
