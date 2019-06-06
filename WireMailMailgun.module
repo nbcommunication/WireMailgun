@@ -17,6 +17,7 @@
  * @property bool $dynamicDomain
  * @property bool $testMode
  * @property bool $disableSslCheck
+ * @property bool $canAttach
  *
  */
 class WireMailMailgun extends WireMail implements Module {
@@ -38,9 +39,7 @@ class WireMailMailgun extends WireMail implements Module {
 			"singular" => false,
 			"autoload" => false,
 			"icon" => "envelope",
-			"requires" => [
-				"ProcessWire>=2.7",
-			],
+			"requires" => "ProcessWire>=2.7",
 		];
 	}
 
@@ -58,6 +57,14 @@ class WireMailMailgun extends WireMail implements Module {
 	 *
 	 */
 	const version = 3;
+
+	/**
+	 * Can files be attached?
+	 *
+	 * @var false
+	 *
+	 */
+	public $canAttach = false;
 
 	/**
 	 * The Mailgun API url
@@ -135,10 +142,14 @@ class WireMailMailgun extends WireMail implements Module {
 	 *
 	 */
 	public function init() {
-		$this->hasTextTools = version_compare($this->wire("config")->version, "3.0.101", ">=");
+		$version = $this->wire("config")->version;
+		$this->hasTextTools = version_compare($version, "3.0.101", ">=");
 		$this->setApiUrl($this->region);
 		$this->cc();
 		$this->bcc();
+		$this->canAttach = function_exists("curl_file_create") && 
+			function_exists("mime_content_type") &&
+			version_compare($version, "2.8.62", ">=");
 	}
 
 	/**
@@ -461,14 +472,17 @@ class WireMailMailgun extends WireMail implements Module {
 		$data["o:testmode"] = $this->testMode;
 
 		// Add Attachments
-		if(function_exists("curl_file_create")) {
+		if($this->canAttach) {
 			// Attachments
 			if(isset($this->mail["attachments"]) && count($this->mail["attachments"])) {
 				$this->header("Content-Type", "multipart/form-data");
 				$i = 0;
 				foreach($this->mail["attachments"] as $filename => $file) {
 					$mime = mime_content_type($file);
-					if($mime) $data["attachment[" . $i++ . "]"] = curl_file_create($file, $mime, $filename);
+					if($mime) {
+						$data["attachment[" . $i++ . "]"] = curl_file_create($file, $mime, $filename);
+						$this->attached++;
+					}
 				}
 			}
 			// Inline images
@@ -476,11 +490,17 @@ class WireMailMailgun extends WireMail implements Module {
 				$i = 0;
 				foreach($this->inline as $filename => $file) {
 					$mime = mime_content_type($file);
-					if($mime) $data["inline[" . $i++ . "]"] = curl_file_create($file, $mime, $filename);
+					if($mime) {
+						$data["inline[" . $i++ . "]"] = curl_file_create($file, $mime, $filename);
+						$this->attached++;
+					}
 				}
 			}
 		} else {
-			$this->log(sprintf($this->_("Sorry, %s is required to add attachments."), "`curl_file_create()`"));
+			$this->log(sprintf(
+				$this->_('Sorry, %1$s, %2$s and %3$s are required to add attachments.'),
+				"`mime_content_type()`", "`curl_file_create()`", "ProcessWire >= 2.8.62"
+			));
 		}
 
 		// Headers
