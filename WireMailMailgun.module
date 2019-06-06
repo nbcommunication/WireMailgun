@@ -479,10 +479,7 @@ class WireMailMailgun extends WireMail implements Module {
 				$i = 0;
 				foreach($this->mail["attachments"] as $filename => $file) {
 					$mime = mime_content_type($file);
-					if($mime) {
-						$data["attachment[" . $i++ . "]"] = curl_file_create($file, $mime, $filename);
-						$this->attached++;
-					}
+					if($mime) $data["attachment[" . $i++ . "]"] = curl_file_create($file, $mime, $filename);
 				}
 			}
 			// Inline images
@@ -490,10 +487,7 @@ class WireMailMailgun extends WireMail implements Module {
 				$i = 0;
 				foreach($this->inline as $filename => $file) {
 					$mime = mime_content_type($file);
-					if($mime) {
-						$data["inline[" . $i++ . "]"] = curl_file_create($file, $mime, $filename);
-						$this->attached++;
-					}
+					if($mime) $data["inline[" . $i++ . "]"] = curl_file_create($file, $mime, $filename);
 				}
 			}
 		} else {
