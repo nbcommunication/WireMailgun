@@ -31,7 +31,7 @@ class WireMailMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun",
-			"version" => 104,
+			"version" => 105,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "plauclair, geeber, outflux3, chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailMailgun",
@@ -133,11 +133,34 @@ class WireMailMailgun extends WireMail implements Module {
 	 *
 	 */
 	public function init() {
-		$version = $this->wire("config")->version;
-		$this->hasTextTools = version_compare($version, "3.0.101", ">=");
+		$this->hasTextTools = version_compare($this->wire("config")->version, "3.0.101", ">=");
 		$this->setApiUrl($this->region);
 		$this->cc();
 		$this->bcc();
+	}
+
+	/**
+	 * Add a file to be attached to the email
+	 *
+	 * @param string $value Full path and filename of file attachment
+	 * @param string $filename Optional different basename for file as it appears in the mail
+	 * @return $this
+	 * @throws WireException If not supported
+	 * @see WireMail::attachment()
+	 *
+	 */
+	public function attachment($value, $filename = "") {
+
+		$minVersion = "2.8.62";
+		if(version_compare($this->wire("config")->version, $minVersion, "<")) {
+			throw new WireException("ProcessWire >= $minVersion is required to use WireMail::attachment()");
+		}
+
+		if(!function_exists("curl_file_create")) {
+			throw new WireException("`curl_file_create()` is required to add attachments.");
+		}
+
+		return parent::attachment($value, $filename); 
 	}
 
 	/**
@@ -184,6 +207,26 @@ class WireMailMailgun extends WireMail implements Module {
 	 */
 	public function bcc($email = null, $name = null) {
 		return $this->setEmail("bcc", $email, $name);
+	}
+
+	/**
+	 * Set the 'reply-to' email address and optionally name (where supported)
+	 *
+	 * @param string $email Must be a single email address or "User Name <user@example.com>" string.
+	 * @param string|null An optional Reply-To name (same as setting/calling replyToName method)
+	 * @return $this
+	 * @throws WireException If not supported, or if provided email was invalid or in blacklist
+	 * @see WireMail::replyTo()
+	 *
+	 */
+	public function replyTo($email, $name = null) {
+
+		$minVersion = "3.0.96";
+		if(version_compare($this->wire("config")->version, $minVersion, "<")) {
+			throw new WireException("ProcessWire >= $minVersion is required to use WireMail::replyTo()");
+		}
+		
+		return parent::replyTo($email, $name); 
 	}
 
 	/**
