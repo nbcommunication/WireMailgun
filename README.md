@@ -1,10 +1,10 @@
 # WireMailMailgun
 Extends WireMail to use the Mailgun API for sending emails.
 
-# How To Install
-1. Download the [zip file](https://github.com/chriswthomson/WireMailMailgun/archive/master.zip) at Github or clone directly the repo into your `site/modules`
-2. If you dowloaded the `zip file`, extract it in your `sites/modules` directory
-3. Goto the modules admin page, click on refresh and install it.
+# Installation
+1. Download the [zip file](https://github.com/chriswthomson/WireMailMailgun/archive/master.zip) at Github or clone the repo into your `site/modules` directory.
+2. If you downloaded the zip file, extract it in your `sites/modules` directory.
+3. In your admin, go to Modules > Refresh, then Modules > New, then click on the Install button for this module.
 
 # API
 Prior to using this module, you must set up a domain in your [Mailgun account](https://app.mailgun.com/app/domains) to create an API key. Add the API key and domain to the module's settings.
