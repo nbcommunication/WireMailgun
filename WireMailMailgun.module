@@ -32,7 +32,7 @@ class WireMailMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun",
-			"version" => 105,
+			"version" => 106,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "plauclair, geeber, outflux3, chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailMailgun",
@@ -245,7 +245,6 @@ class WireMailMailgun extends WireMail implements Module {
 		return $this;
 	}
 
-
 	/**
 	 * Add an inline image for referencing in HTML
 	 *
@@ -259,6 +258,27 @@ class WireMailMailgun extends WireMail implements Module {
 	public function addInlineImage($file, $filename = null) {
 		if(is_null($filename)) $filename = end(explode("/", $file));
 		$this->inline[$filename] = $file;
+		return $this;
+	}
+
+	/**
+	 * Add recipient variables
+	 *
+	 * See https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending
+	 *
+	 * @param array $recipients
+	 * @return WireMail $this
+	 *
+	 */
+	public function addRecipientVariables(array $recipients) {
+		foreach($recipients as $email => $data) {
+			$email = $this->wire("sanitizer")->email($email);
+			if(!$email || !is_array($data)) continue;
+			if(array_key_exists($email, $this->recipientVariables)) {
+				$data = array_merge($this->recipientVariables[$email], $data);
+			}
+			$this->recipientVariables[$email] = $data;
+		}
 		return $this;
 	}
 
