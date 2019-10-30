@@ -29,10 +29,14 @@ The following methods can be used in a chained statement:
 **addData(**_string_ **$key**, _string_ **$value)** - Add custom data to the email.
 - See https://documentation.mailgun.com/en/latest/user_manual.html#attaching-data-to-messages for more information.
 
-**addInlineImage(**_string_ **$file**, _string_ **$filename)** - Add an inline image for referencing in HTML
+**addInlineImage(**_string_ **$file**, _string_ **$filename)** - Add an inline image for referencing in HTML.
 - Reference using "cid:" e.g. `<img src='cid:filename.ext'>`
 - Requires `curl_file_create()` (PHP >= 5.5.0)
 - See https://documentation.mailgun.com/en/latest/user_manual.html#sending-inline-images for more information.
+
+**addRecipientVariables(**_array_ **$recipients)** - Add recipient variables.
+- `$recipients` should be an array of data, keyed by the recipient email address
+- See https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending for more information.
 
 **addTag(**_string_ **$tag)** - Add a tag to the email.
 - Only ASCII allowed
@@ -46,7 +50,7 @@ The following methods can be used in a chained statement:
 **setBatchMode(**_bool_ **$batchMode)** - Enables or disables batch mode.
 - This is on by default, meaning that one email is sent per "to" recipient, and the recipients won't see the other recipients
 - If this is on, any email addresses set by `cc()` and `bcc()` will be ignored
--  Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. [Read more about batch sending](https://documentation.mailgun.com/user_manual.html#batch-sending).
+- Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. [Read more about batch sending](https://documentation.mailgun.com/user_manual.html#batch-sending).
 
 **setDeliveryTime(**_int_ **$time)** - The (unix)time the email should be scheduled for.
 
