@@ -1,11 +1,11 @@
-<?php
+<?php namespace ProcessWire;
 
 /**
  * WireMail Mailgun Configuration
  *
  */
 
-class WireMailMailgunConfig extends ModuleConfig {
+class WireMailgunConfig extends ModuleConfig {
 
 	/**
 	 * Returns default values for module variables
@@ -14,7 +14,6 @@ class WireMailMailgunConfig extends ModuleConfig {
 	 *
 	 */
 	public function getDefaults() {
-
 		return [
 			"region" => "us",
 			"trackOpens" => 1,
@@ -33,7 +32,8 @@ class WireMailMailgunConfig extends ModuleConfig {
 		$modules = $this->wire("modules");
 		$inputfields = parent::getInputfields();
 
-		$mgLink = "[Mailgun](https://mailgun.com/app/domains)";
+		$mgUrl = "https://app.mailgun.com/app";
+		$mgLink = "[Mailgun]($mgUrl/sending/domains)";
 
 		// API Setup
 		$fieldset = $modules->get("InputfieldFieldset");
@@ -65,16 +65,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"required" => true,
 			"columnWidth" => 20,
 			"optionColumns" => 1,
-			"options" => $modules->get("WireMailMailgun")::regions,
-		]);
-
-		$fieldset->add([
-			"type" => "text",
-			"name" => "apiKeyPublic",
-			"label" => $this->_("Mailgun Public API Key"),
-			"description" => sprintf($this->_("The Public API Key is only required if you use the %s feature."), "`validateEmail()`"),
-			"notes" => sprintf($this->_("You can find your Public API Key on %s."), "[Mailgun](https://app.mailgun.com/app/account/security)"),
-			"collapsed" => 2,
+			"options" => $modules->get("WireMailgun")::regions,
 		]);
 
 		$inputfields->add($fieldset);
@@ -89,7 +80,7 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"name" => "fromEmail",
 			"label" => $this->_("Email Address"),
 			"description" => $this->_("The *from* email address."),
-			"notes" => $this->_("When left empty, defaults to *processwire@[domainName]*."),
+			"notes" => sprintf($this->_("When left empty, defaults to %s."), "*processwire@[domainName]*"),
 			"columnWidth" => 50,
 		]);
 
@@ -127,18 +118,9 @@ class WireMailMailgunConfig extends ModuleConfig {
 
 		$fieldset->add([
 			"type" => "checkbox",
-			"name" => "dynamicDomain",
-			"label" => $this->_("Enable Dynamic Domains"),
-			"description" => $this->_("When enabled, the *from* domain is used, ignoring the default **Domain Name** config setting."),
-			"notes" => $this->_("The *from* domain also needs to be a verified Mailgun domain, preferably with the same API key."),
-			"collapsed" => 2,
-		]);
-
-		$fieldset->add([
-			"type" => "checkbox",
 			"name" => "testMode",
 			"label" => $this->_("Enable Test Mode"),
-			"description" => $this->_("When enabled, Mailgun will accept messages but won't send them."),
+			"description" => $this->_("When enabled, Mailgun will accept messages but will not send them."),
 			"collapsed" => 2,
 		]);
 
@@ -146,7 +128,10 @@ class WireMailMailgunConfig extends ModuleConfig {
 			"type" => "checkbox",
 			"name" => "disableSslCheck",
 			"label" => $this->_("Disable cURL SSL Check"),
-			"description" => $this->_("This option will allow you to work around the following error: *cURL Error: SSL certificate problem: unable to get local issuer certificate*."),
+			"description" => sprintf(
+				$this->_("This option will allow you to work around the following error: %s."),
+				"*cURL Error: SSL certificate problem: unable to get local issuer certificate*"
+			),
 			"notes" => $this->_("It is recommended that you leave this option unchecked on production servers."),
 			"collapsed" => 2,
 		]);
