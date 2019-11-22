@@ -147,7 +147,6 @@ if($mg->getHttpCode() == 200) {
 	echo "Could not validate";
 }
 ```
-Please note: To validate an email address, your Mailgun Public API Key must be added to the module's configuration.
 
 ## WireMailMailgun
 A similar module - WireMailMailgun - was initally developed by [plauclair](https://github.com/plauclair/), with further development from [gebeer](https://github.com/gebeer) and [outflux3](https://github.com/outflux3/). WireMailgun started as a rewrite of outflux3's version, bringing the module more in line with ProcessWire conventions and [coding style guide](https://processwire.com/docs/more/coding-style-guide/) and adding some more features. WireMailgun is not compatible with these other versions.
