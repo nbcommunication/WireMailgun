@@ -1,7 +1,7 @@
-<?php
+<?php namespace ProcessWire;
 
 /**
- * WireMail Mailgun
+ * WireMail Mailgun API
  *
  * #pw-summary Extends WireMail to use the Mailgun API for sending emails
  * #pw-var $mg
@@ -9,18 +9,16 @@
  * @property string $apiKey
  * @property string $domain
  * @property string $region
- * @property string $apiKeyPublic
  * @property string $fromEmail
  * @property string $fromEmailName
  * @property bool $trackOpens
  * @property bool $trackClicks
- * @property bool $dynamicDomain
  * @property bool $testMode
  * @property bool $disableSslCheck
  *
  */
 
-class WireMailMailgun extends WireMail implements Module {
+class WireMailgun extends WireMail implements Module {
 
 	/**
 	 * getModuleInfo is a module required by all modules to tell ProcessWire about them
@@ -31,15 +29,15 @@ class WireMailMailgun extends WireMail implements Module {
 	public static function getModuleInfo() {
 
 		return [
-			"title" => "WireMail Mailgun",
-			"version" => 106,
+			"title" => "WireMail Mailgun API",
+			"version" => 110,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
-			"author" => "plauclair, geeber, outflux3, chriswthomson",
-			"href" => "https://github.com/chriswthomson/WireMailMailgun",
+			"author" => "chriswthomson",
+			"href" => "https://github.com/chriswthomson/WireMailgun",
 			"singular" => false,
 			"autoload" => false,
 			"icon" => "envelope",
-			"requires" => "ProcessWire>=2.7",
+			"requires" => "ProcessWire>=3.0.123",
 		];
 	}
 
@@ -59,6 +57,12 @@ class WireMailMailgun extends WireMail implements Module {
 	const version = 3;
 
 	/**
+	 * Mailgun API email validation version
+	 *
+	 */
+	const versionValidation = 4;
+
+	/**
 	 * The Mailgun API url
 	 *
 	 * @var string
@@ -69,13 +73,12 @@ class WireMailMailgun extends WireMail implements Module {
 	/**
 	 * When enabled, emails will be sent to each address
 	 *
-	 * This emulates the default WireMail to() method behavior.
 	 * See setBatchMode() method of this class for more info.
 	 *
 	 * @var bool
 	 *
 	 */
-	protected $batchMode = true;
+	protected $batchMode = false;
 
 	/**
 	 * Custom data for the email to be sent
@@ -84,16 +87,6 @@ class WireMailMailgun extends WireMail implements Module {
 	 *
 	 */
 	protected $customData = [];
-
-	/**
-	 * Can WireTextTools be used?
-	 *
-	 * Set on init() based on ProcessWire version.
-	 *
-	 * @var bool
-	 *
-	 */
-	protected $hasTextTools = false;
 
 	/**
 	 * The Mailgun API HTTP Response Code
@@ -130,14 +123,22 @@ class WireMailMailgun extends WireMail implements Module {
 	protected $tags = [];
 
 	/**
+	 * The error message if `curl_file_create()` is not available for attachment handling
+	 *
+	 * @var string
+	 *
+	 */
+	private $msgCurlFileCreate = "";
+
+	/**
 	 * Initialize the module
 	 *
 	 */
 	public function init() {
-		$this->hasTextTools = version_compare($this->wire("config")->version, "3.0.101", ">=");
 		$this->setApiUrl($this->region);
 		$this->cc();
 		$this->bcc();
+		$this->msgCurlFileCreate = sprintf($this->_("%s is required to add attachments."), "`curl_file_create()`");
 	}
 
 	/**
@@ -151,16 +152,9 @@ class WireMailMailgun extends WireMail implements Module {
 	 *
 	 */
 	public function attachment($value, $filename = "") {
-
-		$minVersion = "2.8.62";
-		if(version_compare($this->wire("config")->version, $minVersion, "<")) {
-			throw new WireException("ProcessWire >= $minVersion is required to use WireMail::attachment()");
-		}
-
 		if(!function_exists("curl_file_create")) {
-			throw new WireException("`curl_file_create()` is required to add attachments.");
+			throw new WireException($this->msgCurlFileCreate);
 		}
-
 		return parent::attachment($value, $filename);
 	}
 
@@ -180,7 +174,7 @@ class WireMailMailgun extends WireMail implements Module {
 	 *	only when specifying #1 (single email) for the first argument.
 	 * @return WireMail $this
 	 * @throws WireException If any provided emails were invalid
-	 * @see WireMailMailgun::setEmail()
+	 * @see WireMailgun::setEmail()
 	 *
 	 */
 	public function cc($email = null, $name = null) {
@@ -203,7 +197,7 @@ class WireMailMailgun extends WireMail implements Module {
 	 *	only when specifying #1 (single email) for the first argument.
 	 * @return WireMail $this
 	 * @throws WireException If any provided emails were invalid
-	 * @see WireMailMailgun::setEmail()
+	 * @see WireMailgun::setEmail()
 	 *
 	 */
 	public function bcc($email = null, $name = null) {
@@ -221,12 +215,6 @@ class WireMailMailgun extends WireMail implements Module {
 	 *
 	 */
 	public function replyTo($email, $name = null) {
-
-		$minVersion = "3.0.96";
-		if(version_compare($this->wire("config")->version, $minVersion, "<")) {
-			throw new WireException("ProcessWire >= $minVersion is required to use WireMail::replyTo()");
-		}
-
 		return parent::replyTo($email, $name);
 	}
 
@@ -309,7 +297,7 @@ class WireMailMailgun extends WireMail implements Module {
 	 *
 	 * @param array $tags
 	 * @return WireMail $this
-	 * @see WireMailMailgun::addTag()
+	 * @see WireMailgun::addTag()
 	 *
 	 */
 	public function addTags(array $tags) {
@@ -332,7 +320,8 @@ class WireMailMailgun extends WireMail implements Module {
 	/**
 	 * Enables or disables batch mode
 	 *
-	 * This is on by default, meaning that all emails in the To field won't see the other recipients.
+	 * When enabled, all recipients in the To field won't see the other recipients.
+	 * This is off by default, unlike the default WireMail to() behaviour
 	 *
 	 * @param bool $batchMode
 	 * @return WireMail $this
@@ -446,7 +435,6 @@ class WireMailMailgun extends WireMail implements Module {
 	 * @return int Returns a positive number (indicating number of emails sent) or 0 on failure.
 	 * @throws WireException
 	 * @see WireMail::send()
-	 * @todo Change error messages to those in Mailgun PHP SDK? https://github.com/mailgun/mailgun-php/blob/master/src/Exception/HttpClientException.php
 	 *
 	 */
 	public function ___send() {
@@ -454,8 +442,8 @@ class WireMailMailgun extends WireMail implements Module {
 		$data = [];
 
 		// Set default "from" values
-		$fromEmail = $this->fromEmail ? $this->fromEmail : "processwire@{$this->domain}";
-		$fromName = $this->fromEmailName ? $this->fromEmailName : "ProcessWire";
+		$fromEmail = $this->fromEmail ?: "processwire@{$this->domain}";
+		$fromName = $this->fromEmailName ?: "ProcessWire";
 
 		// Set manually from WireMail->from()
 		if(!empty($this->mail["from"])) $fromEmail = $this->mail["from"];
@@ -506,11 +494,7 @@ class WireMailMailgun extends WireMail implements Module {
 		$body = $this->mail["body"];
 		if(!empty($this->mail["bodyHTML"])) {
 			$data["html"] = $this->mail["bodyHTML"];
-			if(empty($body)) {
-				$body = $this->hasTextTools ?
-					$this->htmlToText($this->mail["bodyHTML"]) :
-					strip_tags(str_replace(["\n", "<br>"], "\r\n", str_replace("</", "\n</", $this->mail["bodyHTML"])));
-			}
+			if(empty($body)) $body = $this->htmlToText($this->mail["bodyHTML"]);
 			// Set tracking
 			$data["o:tracking-opens"] = $this->trackOpens;
 			$data["o:tracking-clicks"] = $this->trackClicks;
@@ -547,7 +531,7 @@ class WireMailMailgun extends WireMail implements Module {
 					}
 				}
 			} else {
-				throw new WireException("`curl_file_create()` is required to add attachments.");
+				throw new WireException($this->msgCurlFileCreate);
 			}
 		}
 
@@ -573,8 +557,7 @@ class WireMailMailgun extends WireMail implements Module {
 		}
 
 		// Perform API request
-		$result = $this->apiRequest($this->apiUrl . ($this->dynamicDomain ? $fromDomain : $this->domain) . "/messages", [
-			CURLOPT_USERPWD => "api:{$this->apiKey}",
+		$result = $this->apiRequest("{$this->apiUrl}/{$this->domain}/messages", [
 			CURLOPT_POST => true,
 			CURLOPT_POSTFIELDS => $data,
 		]);
@@ -590,11 +573,11 @@ class WireMailMailgun extends WireMail implements Module {
 					return $this->batchMode ? count($this->mail["to"]) : 1;
 					break;
 				case 400:
-					$this->log($code . $this->_("Bad Request") . " - " . $result->message);
+					$this->log($code . sprintf($this->_("The parameters passed to the API were invalid - %s"), $result->message));
 					return 0;
 					break;
 				case 401:
-					$this->log($code . $this->_("Unauthorized - No valid API key provided.") . " (" .
+					$this->log($code . $this->_("Your credentials are incorrect.") . " (" .
 						(!empty($this->apiKey) ?
 							sprintf($this->_("API Key: %s"), $this->apiKey) :
 							$this->_("No API Key set")
@@ -603,15 +586,15 @@ class WireMailMailgun extends WireMail implements Module {
 					return 0;
 					break;
 				case 402:
-					$this->log($code . $this->_("Request Failed - Parameters were valid but request failed."));
+					$this->log($code . $this->_("Parameters were valid but request failed. Try again."));
 					return 0;
 					break;
 				case 404:
-					$this->log($code . $this->_("Not Found - The requested item does not exist."));
+					$this->log($code . $this->_("The endpoint you have tried to access does not exist. Check if the domain matches the domain you have configure on Mailgun."));
 					return 0;
 					break;
 				case 413:
-					$this->log($code . $this->_("Request Entity Too Large - Attachment size is too big."));
+					$this->log($code . $this->_("Payload too large, your total attachment size is too big."));
 					return 0;
 					break;
 				default:
@@ -626,7 +609,7 @@ class WireMailMailgun extends WireMail implements Module {
 	 * Validates a single address using Mailgun's address validation service
 	 *
 	 * For more information on what this method returns, visit
-	 * https://documentation.mailgun.com/api-email-validation.html#email-validation
+	 * https://documentation.mailgun.com/en/latest/user_manual.html#email-validation-v4
 	 *
 	 * @param string $email
 	 * @param bool $assoc Default is to return an array (specified by TRUE). If you want an object instead, specify FALSE.
@@ -635,20 +618,15 @@ class WireMailMailgun extends WireMail implements Module {
 	 */
 	public function validateEmail($email, $assoc = true) {
 
-		// If public API key isn't set, log that
-		if(empty($this->apiKeyPublic)) {
-			$this->log($this->_("The Public API Key must be set when using the email validation feature."));
-			return false;
-		}
-
 		// Sanitize email and return false if not valid
 		$email = $this->wire("sanitizer")->email($email);
 		if(empty($email)) return false;
 
+		// Set API url
+		$this->setApiUrl(self::versionValidation);
+
 		// Return API response
-		return json_decode($this->apiRequest("{$this->apiUrl}address/validate?address=" . urlencode($email), [
-			CURLOPT_USERPWD => "api:{$this->apiKeyPublic}",
-		]), $assoc);
+		return json_decode($this->apiRequest("{$this->apiUrl}/address/validate?address=" . urlencode($email)), $assoc);
 	}
 
 	/**
@@ -664,8 +642,8 @@ class WireMailMailgun extends WireMail implements Module {
 	/**
 	 * Perform a request to the Mailgun API
 	 *
-	 * @param string $url The url to post to
-	 * @param array $options Add cURL options for the request
+	 * @param string $url The url to request data from
+	 * @param array $options Additional cURL options for the request
 	 * @return string|false
 	 *
 	 */
@@ -679,6 +657,7 @@ class WireMailMailgun extends WireMail implements Module {
 			CURLOPT_URL => $url,
 			CURLOPT_HEADER => false,
 			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_USERPWD => "api:{$this->apiKey}",
 			CURLOPT_SSL_VERIFYPEER => !$this->disableSslCheck,
 		]);
 
@@ -730,21 +709,11 @@ class WireMailMailgun extends WireMail implements Module {
 			FILTER_FLAG_STRIP_HIGH
 		);
 
-		// Truncate
-		if($length) {
-			if($this->hasTextTools) {
-				// Use Sanitizer::truncate()
-				$value = $this->wire("sanitizer")->truncate($value, [
-					"maxLength" => $length,
-					"more" => "",
-				]);
-			} else {
-				// Fallback
-				$value = substr($value, 0, $length);
-			}
-		}
-
-		return $value;
+		// Return, truncate if $length
+		return $length ? $this->wire("sanitizer")->truncate($value, [
+			"maxLength" => $length,
+			"more" => "",
+		]) : $value;
 	}
 
 	/**
@@ -755,7 +724,11 @@ class WireMailMailgun extends WireMail implements Module {
 	 */
 	protected function setApiUrl($region) {
 		$v = self::version;
-		$this->apiUrl = $region == "us" ? "https://api.mailgun.net/v$v/" : "https://api.{$region}.mailgun.net/v$v/";
+		if(is_int($region)) {
+			$v = $region;
+			$region = $this->region;
+		}
+		$this->apiUrl = $region == "us" ? "https://api.mailgun.net/v$v" : "https://api.{$region}.mailgun.net/v$v";
 	}
 
 	/**
