@@ -1,13 +1,13 @@
-# WireMailMailgun
+# WireMail Mailgun
 Extends WireMail to use the Mailgun API for sending emails.
 
 # Installation
-1. Download the [zip file](https://github.com/chriswthomson/WireMailMailgun/archive/master.zip) at Github or clone the repo into your `site/modules` directory.
+1. Download the [zip file](https://github.com/chriswthomson/WireMailgun/archive/master.zip) at Github or clone the repo into your `site/modules` directory.
 2. If you downloaded the zip file, extract it in your `sites/modules` directory.
 3. In your admin, go to Modules > Refresh, then Modules > New, then click on the Install button for this module.
 
 # API
-Prior to using this module, you must set up a domain in your [Mailgun account](https://app.mailgun.com/app/domains) to create an API key. Add the API key and domain to the module's settings.
+Prior to using this module, you must set up a domain in your [Mailgun account](https://app.mailgun.com/app/sending/domains) to create an API key. Add the API key and domain to the module's settings.
 
 ## Usage
 Usage is similar to the basic WireMail implementation, although a few extra options are available. Please refer to the [WireMail documentation](https://processwire.com/api/ref/wire-mail/) for full instructions on using WireMail, and to the examples below.
@@ -48,7 +48,7 @@ The following methods can be used in a chained statement:
 **setApiKey(**_string_ **$apiKey)** - Override the Mailgun API Key module setting.
 
 **setBatchMode(**_bool_ **$batchMode)** - Enables or disables batch mode.
-- This is on by default, meaning that one email is sent per "to" recipient, and the recipients won't see the other recipients
+- This is off by default, meaning that a single email is sent with each recipient seeing the other recipients
 - If this is on, any email addresses set by `cc()` and `bcc()` will be ignored
 - Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. [Read more about batch sending](https://documentation.mailgun.com/user_manual.html#batch-sending).
 
@@ -79,7 +79,7 @@ The following methods can be used in a chained statement:
 
 **validateEmail(**_string_ **$email)** - Validates a single address using Mailgun's address validation service.
 - Returns an associative array. To return the response as an object, set the second argument to false
-- For more information on what this method returns, see [Mailgun's documentation](https://documentation.mailgun.com/api-email-validation.html#email-validation).
+- For more information on what this method returns, see [Mailgun's documentation](https://documentation.mailgun.com/en/latest/user_manual.html#email-validation-v4).
 
 **getHttpCode()** - Get the API HTTP response code.
 - A response code of `200` indicates a successful response
@@ -90,7 +90,7 @@ The following methods can be used in a chained statement:
 Send an email:
 
 ```php
-$mg = $mail->new(); // wireMail() for ProcessWire < 3.0.123
+$mg = $mail->new();
 $sent = $mg->to("user@domain.com")
 	->from("you@company.com")
 	->subject("Message Subject")
@@ -99,7 +99,7 @@ $sent = $mg->to("user@domain.com")
 ```
 
 ### Advanced Example
-Send an email using all supported WireMail methods and extra methods implemented by WireMailMailgun:
+Send an email using all supported WireMail methods and extra methods implemented by WireMailgun:
 ```php
 $mg = $mail->new();
 
@@ -109,14 +109,14 @@ $mg->to([
 		"user2@domain.com" => "Another User",
 	])
 	->from("you@company.com", "Company Name")
-	->replyTo("reply@company.com", "Company Name") // ProcessWire >= 3.0.96
+	->replyTo("reply@company.com", "Company Name")
 	->subject("Message Subject")
 	->bodyHTML("<p>Message Body</p>") // A text version will be automatically created
 	->header("key1", "value1")
-	->headers(["key2" => "value2"]) // ProcessWire >= 3.0.96
-	->attachment("/path/to/file.ext", "filename.ext"); // ProcessWire >= 2.8.62
+	->headers(["key2" => "value2"])
+	->attachment("/path/to/file.ext", "filename.ext");
 
-// WireMailMailgun methods
+// WireMailgun methods
 $mg->cc("cc@domain.com")
 	->bcc(["bcc@domain.com", "bcc2@domain.com"])
 	->addData("key", "value") // Custom X-Mailgun-Variables data
@@ -142,17 +142,12 @@ $mg = $mail->new();
 $response = $mg->validateEmail("user@domain.com", false);
 
 if($mg->getHttpCode() == 200) {
-	echo $response->is_valid ? "Valid" : "Not valid: $response->reason";
+	echo $response->result == "deliverable" ? "Valid" : "Not valid";
 } else {
 	echo "Could not validate";
 }
 ```
 Please note: To validate an email address, your Mailgun Public API Key must be added to the module's configuration.
 
-## Other Versions and Backward Compatibility
-This module was initally developed by [plauclair](https://github.com/plauclair/), with further development from [gebeer](https://github.com/gebeer) and [outflux3](https://github.com/outflux3/). This module is a rewrite of outflux3's version, bringing the module more in line with ProcessWire conventions and [coding style guide](https://processwire.com/docs/more/coding-style-guide/) and adding some more features. This module is not compatible with these other versions, so please only use it if beginning a new project. That said, a simple existing implementation would not require much work to upgrade and test.
-
-The other versions of WireMailMailgun can be found here:
-- https://github.com/plauclair/WireMailMailgun
-- https://github.com/gebeer/WireMailMailgun
-- https://github.com/outflux3/WireMailMailgun
+## WireMailMailgun
+A similar module - WireMailMailgun - was initally developed by [plauclair](https://github.com/plauclair/), with further development from [gebeer](https://github.com/gebeer) and [outflux3](https://github.com/outflux3/). WireMailgun started as a rewrite of outflux3's version, bringing the module more in line with ProcessWire conventions and [coding style guide](https://processwire.com/docs/more/coding-style-guide/) and adding some more features. WireMailgun is not compatible with these other versions.
