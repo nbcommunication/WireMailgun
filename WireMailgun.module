@@ -30,7 +30,7 @@ class WireMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun API",
-			"version" => 110,
+			"version" => 111,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailgun",
@@ -622,11 +622,11 @@ class WireMailgun extends WireMail implements Module {
 		$email = $this->wire("sanitizer")->email($email);
 		if(empty($email)) return false;
 
-		// Set API url
-		$this->setApiUrl(self::versionValidation);
+		// Get the API url (v4 validation must be the default 'us' endpoint)
+		$apiUrl = $this->getApiUrl("us", self::versionValidation);
 
 		// Return API response
-		return json_decode($this->apiRequest("{$this->apiUrl}/address/validate?address=" . urlencode($email)), $assoc);
+		return json_decode($this->apiRequest("$apiUrl/address/validate?address=" . urlencode($email)), $assoc);
 	}
 
 	/**
@@ -679,6 +679,18 @@ class WireMailgun extends WireMail implements Module {
 	}
 
 	/**
+	 * Get the Mailgun API URL by version and region
+	 *
+	 * @param string $region ('us' or 'eu');
+	 * @param int $version
+	 *
+	 */
+	protected function getApiUrl($region, $version = null) {
+		$v = isset($version) ? $version : self::version;
+		return $region == "us" ? "https://api.mailgun.net/v$v" : "https://api.{$region}.mailgun.net/v$v";
+	}
+
+	/**
 	 * Get emails as CSV string from given "name" $mail variable
 	 *
 	 * @param array $emails
@@ -723,12 +735,12 @@ class WireMailgun extends WireMail implements Module {
 	 *
 	 */
 	protected function setApiUrl($region) {
-		$v = self::version;
+		$version = self::version;
 		if(is_int($region)) {
-			$v = $region;
+			$version = $region;
 			$region = $this->region;
 		}
-		$this->apiUrl = $region == "us" ? "https://api.mailgun.net/v$v" : "https://api.{$region}.mailgun.net/v$v";
+		$this->apiUrl = $this->getApiUrl($region, $version);
 	}
 
 	/**
