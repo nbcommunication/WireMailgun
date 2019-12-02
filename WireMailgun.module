@@ -275,6 +275,7 @@ class WireMailgun extends WireMail implements Module {
 					array_merge($this->recipientVariables[$email], $data) :
 					array_merge($data, $this->recipientVariables[$email]);
 			}
+			if(!array_key_exists("id", $data)) $data["id"] = $i++;
 			$this->recipientVariables[$email] = $data;
 		}
 		return $this;
