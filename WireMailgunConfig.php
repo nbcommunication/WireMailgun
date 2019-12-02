@@ -118,6 +118,15 @@ class WireMailgunConfig extends ModuleConfig {
 
 		$fieldset->add([
 			"type" => "checkbox",
+			"name" => "batchMode",
+			"label" => $this->_("Batch Mode"),
+			"description" => $this->_("When enabled, emails will be sent individually to each address."),
+			"notes" => sprintf($this->_("See %s method of this class for more information."), "`setBatchMode()`"),
+			"collapsed" => 2,
+		]);
+
+		$fieldset->add([
+			"type" => "checkbox",
 			"name" => "testMode",
 			"label" => $this->_("Enable Test Mode"),
 			"description" => $this->_("When enabled, Mailgun will accept messages but will not send them."),
