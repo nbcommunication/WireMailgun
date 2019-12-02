@@ -13,6 +13,7 @@
  * @property string $fromEmailName
  * @property bool $trackOpens
  * @property bool $trackClicks
+ * @property bool $batchMode
  * @property bool $testMode
  * @property bool $disableSslCheck
  *
@@ -30,7 +31,7 @@ class WireMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun API",
-			"version" => 112,
+			"version" => 113,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailgun",
@@ -83,16 +84,6 @@ class WireMailgun extends WireMail implements Module {
 	 *
 	 */
 	protected $batchDefer = [];
-
-	/**
-	 * When enabled, emails will be sent to each address
-	 *
-	 * See setBatchMode() method of this class for more info.
-	 *
-	 * @var bool
-	 *
-	 */
-	protected $batchMode = false;
 
 	/**
 	 * Custom data for the email to be sent
