@@ -37,23 +37,6 @@ The following methods can be used in a chained statement:
 **addRecipientVariables(**_array_ **$recipients)** - Add/override recipient variables.
 - `$recipients` should be an array of data, keyed by the recipient email address
 - See https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending for more information.
-- If using batch mode, these are inferred from the `to` addresses, and this method can be used to override values using the email address as the key e.g.
-```php
-$mg = $mail->new();
-$mg->to([
-		"user@domain.com" => "A User",
-		"user2@domain.com" => "Another User",
-	])
-	->setBatchMode(true)
-	->addRecipientVariables([
-		"user@domain.com" => "A User (changed name)",
-		"user2@domain.com" => [
-			"name" => "Another User (changed name)",
-			"customVar" => "A custom variable",
-		],
-	])
-	->send();
-```
 
 **addTag(**_string_ **$tag)** - Add a tag to the email.
 - Only ASCII allowed
@@ -154,6 +137,70 @@ $mg->cc("cc@domain.com")
 $numSent = $mg->send();
 
 echo "The email was " . ($numSent ? "" : "not ") . "sent.";
+```
+
+### Sending in Batch Mode
+```php
+// If using batch mode, the recipient variable "name" is inferred from the `to` addresses, e.g.
+$mg = $mail->new();
+$mg->to([
+		"user@domain.com" => "A User",
+		"user2@domain.com" => "Another User",
+	])
+	->setBatchMode(true)
+	->subject("Message Subject")
+	->bodyHTML("<p>Dear %recipient.name%,</p>")
+	->send();
+
+// to = A User <user@domain.com>, Another User <user2@domain.com>
+// recipientVariables = {"user@domain.com": {"name": "A User"}, "user@domain.com": {"name": "Another User"}}
+// bodyHTML[user@domain.com] = <p>Dear A User,</p>
+// bodyHTML[user2@domain.com] = <p>Dear Another User,</p>
+
+// Alternatively, you can omit the `to` recipients if setting `recipientVariables` explictly e.g.
+$mg = $mail->new();
+$mg->setBatchMode(true)
+	->addRecipientVariables([
+		"user@domain.com" => "A User", // "name" is inferred
+		"user2@domain.com" => [
+			"name" => "Another User",
+			"customvar" => "A custom variable",
+		],
+	])
+	->subject("Message Subject")
+	->bodyHTML("<p>Dear %recipient.name%,</p><p>Custom: %recipient.customVar%!</p>") 
+	->send();
+
+// to = A User <user@domain.com>, Another User <user2@domain.com>
+// recipientVariables = {"user@domain.com": {"name": "A User"}, "user@domain.com": {"name": "Another User", "customvar": "A custom variable"}}
+// bodyHTML[user@domain.com] = <p>Dear A User,</p><p>Custom: %recipient.customVar%!</p>
+// bodyHTML[user2@domain.com] = <p>Dear Another User,</p><p>Custom: A custom variable!</p>
+// %recipient.customVar% only prints for second email, so not a particularly useful example!
+
+// You can also use addRecipientVaiables to extend/override the inferred `recipientVariables` e.g.
+$mg = $mail->new();
+$mg->to([
+		"user@domain.com" => "A User",
+		"user2@domain.com" => "Another User",
+	])
+	->addRecipientVariables([
+		"user@domain.com" => [
+			"title" => "A User (title)",
+		],
+		"user2@domain.com" => [
+			"name" => "Another User (changed name)",
+			"title" => "Another User (title)",
+		],
+	])
+	->setBatchMode(true)
+	->subject("Message Subject")
+	->bodyHTML("<p>Dear %recipient.name%,</p><p>Title: %recipient.title%!</p>")
+	->send();
+
+// to = A User <user@domain.com>, Another User (changed name) <user2@domain.com>
+// recipientVariables = {"user@domain.com": {"name": "A User", "title": "A User (title)"}, "user@domain.com": {"name": "Another User (changed name)", "title": "Another User (title)"}}
+// bodyHTML[user@domain.com] = <p>Dear A User,</p><p>Title: A User (title)!</p>
+// bodyHTML[user2@domain.com] = <p>Dear Another User (changed name),</p><p>Title: Another User (title)!</p>
 ```
 
 ### Validate an Email Address
