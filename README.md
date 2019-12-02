@@ -34,9 +34,26 @@ The following methods can be used in a chained statement:
 - Requires `curl_file_create()` (PHP >= 5.5.0)
 - See https://documentation.mailgun.com/en/latest/user_manual.html#sending-inline-images for more information.
 
-**addRecipientVariables(**_array_ **$recipients)** - Add recipient variables.
+**addRecipientVariables(**_array_ **$recipients)** - Add/override recipient variables.
 - `$recipients` should be an array of data, keyed by the recipient email address
 - See https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending for more information.
+- If using batch mode, these are inferred from the `to` addresses, and this method can be used to override values using the email address as the key e.g.
+```php
+$mg = $mail->new();
+$mg->to([
+		"user@domain.com" => "A User",
+		"user2@domain.com" => "Another User",
+	])
+	->setBatchMode(true)
+	->addRecipientVariables([
+		"user@domain.com" => "A User (changed name)",
+		"user2@domain.com" => [
+			"name" => "Another User (changed name)",
+			"customVar" => "A custom variable",
+		],
+	])
+	->send();
+```
 
 **addTag(**_string_ **$tag)** - Add a tag to the email.
 - Only ASCII allowed
@@ -65,12 +82,15 @@ The following methods can be used in a chained statement:
 - A shortcut for calling `setDomainName()`, `setApiKey()` and `setRegion()`
 
 **setTestMode(**_bool_ **$testMode)** - Override the "Test Mode" module setting.
+- Disabled automatically for "Forgot Password" emails from ProcessWire
 
 **setTrackOpens(**_bool_ **$trackOpens)** - Override "Track Message Opens" module setting on a per-email basis.
 - Open tracking only works for emails with `bodyHTML()` set
+- Disabled automatically for "Forgot Password" emails from ProcessWire
 
 **setTrackClicks(**_bool_ **$trackClicks)** - Override "Track Message Clicks" module setting on a per-email basis.
 - Click tracking only works for emails with `bodyHTML()` set
+- Disabled automatically for "Forgot Password" emails from ProcessWire
 
 ### Other
 
