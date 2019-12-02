@@ -31,7 +31,7 @@ class WireMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun API",
-			"version" => 113,
+			"version" => 114,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailgun",
@@ -260,17 +260,20 @@ class WireMailgun extends WireMail implements Module {
 	 * See https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending
 	 *
 	 * @param array $recipients
+	 * @param bool $override
 	 * @return WireMail $this
 	 *
 	 */
-	public function addRecipientVariables(array $recipients) {
+	public function addRecipientVariables(array $recipients, $override = true) {
 		$i = count($this->recipientVariables);
 		foreach($recipients as $email => $data) {
 			$email = $this->wire("sanitizer")->email($email);
 			if(!$email) continue;
 			if(!is_array($data)) $data = ["id" => $i++, "name" => $data];
 			if(array_key_exists($email, $this->recipientVariables)) {
-				$data = array_merge($this->recipientVariables[$email], $data);
+				$data = $override ?
+					array_merge($this->recipientVariables[$email], $data) :
+					array_merge($data, $this->recipientVariables[$email]);
 			}
 			$this->recipientVariables[$email] = $data;
 		}
@@ -465,24 +468,27 @@ class WireMailgun extends WireMail implements Module {
 		// If the sender is not from the verified Mailgun domain, set sender header
 		if($fromDomain !== $this->domain) $this->header("sender", $data["from"]);
 
-		// Set recipients
-		$data["to"] = $this->getEmails($this->mail["toName"]);
-
 		// Batch mode
 		if($this->batchMode) {
 
 			// Emulate the default to() method behavior.
-			if(isset($this->mail["toName"])) $this->addRecipientVariables($this->mail["toName"]);
+			if(isset($this->mail["toName"])) $this->addRecipientVariables($this->mail["toName"], false);
 
 			// Mailgun hard limit on this calling style is 1000 recipients per request
 			if(count($this->recipientVariables) > self::batchLimit) {
 				$this->batchDefer = $this->recipientVariables;
 			} else {
+				// Set recipients
+				$data["to"] = $this->getEmails($this->recipientVariables);
+				// Set recipient variables
 				$data["recipient-variables"] = json_encode($this->recipientVariables);
 			}
 
 		} else {
-			
+
+			// Set recipients
+			$data["to"] = $this->getEmails($this->mail["toName"]);
+
 			if(count($this->recipientVariables)) {
 				$this->log(sprintf(
 					$this->_("Recipient variables are only used when Batch Mode is enabled. The following recipient variables were set: %s"),
@@ -591,8 +597,11 @@ class WireMailgun extends WireMail implements Module {
 			} while($offset < $deferredCount);
 
 			foreach($deferred as $defer) {
+				// Set recipients
 				$data["to"] = $this->getEmails($defer);
+				// Set recipient variables
 				$data["recipient-variables"] = json_encode($defer);
+				// Send and increment
 				$sent = $sent + $this->apiSend($data);
 			}
 
@@ -699,7 +708,7 @@ class WireMailgun extends WireMail implements Module {
 			$code = sprintf($this->_("Code %d"), $response) . ": ";
 			switch($response) {
 				case 200:
-					return $this->batchMode && isset($data["recipient-variables"]) ? 
+					return $this->batchMode && isset($data["recipient-variables"]) ?
 						count(json_decode($data["recipient-variables"], 1)) : 1;
 					break;
 				case 400:
