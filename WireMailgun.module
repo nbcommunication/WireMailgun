@@ -30,7 +30,7 @@ class WireMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun API",
-			"version" => 111,
+			"version" => 112,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailgun",
@@ -40,6 +40,12 @@ class WireMailgun extends WireMail implements Module {
 			"requires" => "ProcessWire>=3.0.123",
 		];
 	}
+
+	/**
+	 * Mailgun Batch Sending Limit
+	 *
+	 */
+	const batchLimit = 1000;
 
 	/**
 	 * Mailgun regions
@@ -69,6 +75,14 @@ class WireMailgun extends WireMail implements Module {
 	 *
 	 */
 	protected $apiUrl;
+
+	/**
+	 * Used to defer recipientVariables that are over the batch mode limit
+	 *
+	 * @var array
+	 *
+	 */
+	protected $batchDefer = [];
 
 	/**
 	 * When enabled, emails will be sent to each address
@@ -259,9 +273,11 @@ class WireMailgun extends WireMail implements Module {
 	 *
 	 */
 	public function addRecipientVariables(array $recipients) {
+		$i = count($this->recipientVariables);
 		foreach($recipients as $email => $data) {
 			$email = $this->wire("sanitizer")->email($email);
-			if(!$email || !is_array($data)) continue;
+			if(!$email) continue;
+			if(!is_array($data)) $data = ["id" => $i++, "name" => $data];
 			if(array_key_exists($email, $this->recipientVariables)) {
 				$data = array_merge($this->recipientVariables[$email], $data);
 			}
@@ -463,18 +479,26 @@ class WireMailgun extends WireMail implements Module {
 
 		// Batch mode
 		if($this->batchMode) {
+
 			// Emulate the default to() method behavior.
+			if(isset($this->mail["toName"])) $this->addRecipientVariables($this->mail["toName"]);
+
 			// Mailgun hard limit on this calling style is 1000 recipients per request
-			$i = 0;
-			foreach($this->mail["toName"] as $email => $name) {
-				if(!array_key_exists($email, $this->recipientVariables)) {
-					$this->recipientVariables[$email] = [];
-				}
-				$this->recipientVariables[$email]["id"] = ++$i;
-				$this->recipientVariables[$email]["name"] = $name;
+			if(count($this->recipientVariables) > self::batchLimit) {
+				$this->batchDefer = $this->recipientVariables;
+			} else {
+				$data["recipient-variables"] = json_encode($this->recipientVariables);
 			}
-			$data["recipient-variables"] = json_encode($this->recipientVariables);
+
 		} else {
+			
+			if(count($this->recipientVariables)) {
+				$this->log(sprintf(
+					$this->_("Recipient variables are only used when Batch Mode is enabled. The following recipient variables were set: %s"),
+					json_encode($this->recipientVariables)
+				));
+			}
+
 			// Set CC recipients
 			if(count($this->mail["ccName"])) $data["cc"] = $this->getEmails($this->mail["ccName"]);
 			// Set BCC recipients
@@ -489,6 +513,13 @@ class WireMailgun extends WireMail implements Module {
 
 		// Set subject
 		$data["subject"] = $this->mail["subject"];
+
+		// When sending a password reset email, prevent Test mode and Open/Click Tracking
+		if($data["subject"] == $this->wire("modules")->get("ProcessForgotPassword")->emailSubject) {
+			$this->setTestMode(false);
+			$this->setTrackOpens(false);
+			$this->setTrackClicks(false);
+		}
 
 		// Set body
 		$body = $this->mail["body"];
@@ -556,53 +587,29 @@ class WireMailgun extends WireMail implements Module {
 			}
 		}
 
-		// Perform API request
-		$result = $this->apiRequest("{$this->apiUrl}/{$this->domain}/messages", [
-			CURLOPT_POST => true,
-			CURLOPT_POSTFIELDS => $data,
-		]);
+		$sent = 0;
+		$deferredCount = count($this->batchDefer);
+		if($deferredCount) {
 
-		if($result === false) {
-			return 0;
-		} else {
-			$result = json_decode($result);
-			$response = $this->getHttpCode();
-			$code = sprintf($this->_("Code %d"), $response) . ": ";
-			switch($response) {
-				case 200:
-					return $this->batchMode ? count($this->mail["to"]) : 1;
-					break;
-				case 400:
-					$this->log($code . sprintf($this->_("The parameters passed to the API were invalid - %s"), $result->message));
-					return 0;
-					break;
-				case 401:
-					$this->log($code . $this->_("Your credentials are incorrect.") . " (" .
-						(!empty($this->apiKey) ?
-							sprintf($this->_("API Key: %s"), $this->apiKey) :
-							$this->_("No API Key set")
-						) .
-					")");
-					return 0;
-					break;
-				case 402:
-					$this->log($code . $this->_("Parameters were valid but request failed. Try again."));
-					return 0;
-					break;
-				case 404:
-					$this->log($code . $this->_("The endpoint you have tried to access does not exist. Check if the domain matches the domain you have configure on Mailgun."));
-					return 0;
-					break;
-				case 413:
-					$this->log($code . $this->_("Payload too large, your total attachment size is too big."));
-					return 0;
-					break;
-				default:
-					$this->log($code . $this->_("Mailgun Server Error."));
-					return 0;
-					break;
+			$deferred = [];
+			$offset = 0;
+			$limit = self::batchLimit;
+			do {
+				$deferred[] = array_slice($this->batchDefer, $offset, $limit);
+				$offset = $offset + $limit;
+			} while($offset < $deferredCount);
+
+			foreach($deferred as $defer) {
+				$data["to"] = $this->getEmails($defer);
+				$data["recipient-variables"] = json_encode($defer);
+				$sent = $sent + $this->apiSend($data);
 			}
+
+		} else {
+			$sent = $this->apiSend($data);
 		}
+
+		return $sent;
 	}
 
 	/**
@@ -679,6 +686,65 @@ class WireMailgun extends WireMail implements Module {
 	}
 
 	/**
+	 * Perform a send request to the Mailgun API
+	 *
+	 * @param array $data The data to send.
+	 * @return int
+	 *
+	 */
+	protected function apiSend(array $data) {
+
+		// Perform API request
+		$result = $this->apiRequest("{$this->apiUrl}/{$this->domain}/messages", [
+			CURLOPT_POST => true,
+			CURLOPT_POSTFIELDS => $data,
+		]);
+
+		if($result === false) {
+			return 0;
+		} else {
+			$result = json_decode($result);
+			$response = $this->getHttpCode();
+			$code = sprintf($this->_("Code %d"), $response) . ": ";
+			switch($response) {
+				case 200:
+					return $this->batchMode && isset($data["recipient-variables"]) ? 
+						count(json_decode($data["recipient-variables"], 1)) : 1;
+					break;
+				case 400:
+					$this->log($code . sprintf($this->_("The parameters passed to the API were invalid - %s"), $result->message));
+					return 0;
+					break;
+				case 401:
+					$this->log($code . $this->_("Your credentials are incorrect.") . " (" .
+						(!empty($this->apiKey) ?
+							sprintf($this->_("API Key: %s"), $this->apiKey) :
+							$this->_("No API Key set")
+						) .
+					")");
+					return 0;
+					break;
+				case 402:
+					$this->log($code . $this->_("Parameters were valid but request failed. Try again."));
+					return 0;
+					break;
+				case 404:
+					$this->log($code . $this->_("The endpoint you have tried to access does not exist. Check if the domain matches the domain you have configure on Mailgun."));
+					return 0;
+					break;
+				case 413:
+					$this->log($code . $this->_("Payload too large, your total attachment size is too big."));
+					return 0;
+					break;
+				default:
+					$this->log($code . $this->_("Mailgun Server Error."));
+					return 0;
+					break;
+			}
+		}
+	}
+
+	/**
 	 * Get the Mailgun API URL by version and region
 	 *
 	 * @param string $region ('us' or 'eu');
@@ -694,11 +760,13 @@ class WireMailgun extends WireMail implements Module {
 	 * Get emails as CSV string from given "name" $mail variable
 	 *
 	 * @param array $emails
+	 * @return string
 	 *
 	 */
 	protected function getEmails(array $emails) {
 		$items = [];
 		foreach($emails as $email => $name) {
+			if(is_array($name)) $name = isset($name["name"]) ? $name["name"] : "";
 			$items[] = empty($name) ? $email : "{$name} <{$email}>";
 		}
 		return implode(",", $items);
