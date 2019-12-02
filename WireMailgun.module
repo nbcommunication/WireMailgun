@@ -31,7 +31,7 @@ class WireMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun API",
-			"version" => 114,
+			"version" => 115,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailgun",
@@ -269,13 +269,12 @@ class WireMailgun extends WireMail implements Module {
 		foreach($recipients as $email => $data) {
 			$email = $this->wire("sanitizer")->email($email);
 			if(!$email) continue;
-			if(!is_array($data)) $data = ["id" => $i++, "name" => $data];
+			if(!is_array($data)) $data = ["name" => $data];
 			if(array_key_exists($email, $this->recipientVariables)) {
 				$data = $override ?
 					array_merge($this->recipientVariables[$email], $data) :
 					array_merge($data, $this->recipientVariables[$email]);
 			}
-			if(!array_key_exists("id", $data)) $data["id"] = $i++;
 			$this->recipientVariables[$email] = $data;
 		}
 		return $this;
@@ -482,7 +481,7 @@ class WireMailgun extends WireMail implements Module {
 				// Set recipients
 				$data["to"] = $this->getEmails($this->recipientVariables);
 				// Set recipient variables
-				$data["recipient-variables"] = json_encode($this->recipientVariables);
+				$data["recipient-variables"] = $this->getRecipientVariables($this->recipientVariables);
 			}
 
 		} else {
@@ -601,7 +600,7 @@ class WireMailgun extends WireMail implements Module {
 				// Set recipients
 				$data["to"] = $this->getEmails($defer);
 				// Set recipient variables
-				$data["recipient-variables"] = json_encode($defer);
+				$data["recipient-variables"] = $this->getRecipientVariables($defer);
 				// Send and increment
 				$sent = $sent + $this->apiSend($data);
 			}
@@ -758,7 +757,7 @@ class WireMailgun extends WireMail implements Module {
 	}
 
 	/**
-	 * Get emails as CSV string from given "name" $mail variable
+	 * Get emails as CSV string from given $mail variable
 	 *
 	 * @param array $emails
 	 * @return string
@@ -767,7 +766,15 @@ class WireMailgun extends WireMail implements Module {
 	protected function getEmails(array $emails) {
 		$items = [];
 		foreach($emails as $email => $name) {
-			if(is_array($name)) $name = isset($name["name"]) ? $name["name"] : "";
+			if(is_array($name)) {
+				foreach(["name", "toName"] as $key) {
+					if(isset($name[$key])) {
+						$name = $name[$key];
+						break;
+					}
+				}
+				if(is_array($name)) $name = "";
+			}
 			$items[] = empty($name) ? $email : "{$name} <{$email}>";
 		}
 		return implode(",", $items);
@@ -1589,5 +1596,18 @@ class WireMailgun extends WireMail implements Module {
 				return false;
 			}
 		}
+	}
+
+	/**
+	 * Get the recipient variables string, folded if required
+	 *
+	 * @param array $data
+	 * @return string
+	 *
+	 */
+	private function getRecipientVariables(array $data) {
+		$vars = json_encode($data);
+		if(strlen($vars) > 998) $vars = str_replace("},", "},\r\n", $vars);
+		return $vars;
 	}
 }
