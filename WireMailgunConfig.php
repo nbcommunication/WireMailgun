@@ -16,6 +16,7 @@ class WireMailgunConfig extends ModuleConfig {
 	public function getDefaults() {
 		return [
 			"region" => "us",
+			"batchMode" => (int) $this->wire("modules")->isInstalled("ProMailer"),
 			"trackOpens" => 1,
 			"trackClicks" => 1,
 		];
@@ -34,6 +35,7 @@ class WireMailgunConfig extends ModuleConfig {
 
 		$mgUrl = "https://app.mailgun.com/app";
 		$mgLink = "[Mailgun]($mgUrl/sending/domains)";
+		$hasProMailer = $modules->isInstalled("ProMailer");
 
 		// API Setup
 		$fieldset = $modules->get("InputfieldFieldset");
@@ -121,8 +123,9 @@ class WireMailgunConfig extends ModuleConfig {
 			"name" => "batchMode",
 			"label" => $this->_("Batch Mode"),
 			"description" => $this->_("When enabled, emails will be sent individually to each address."),
-			"notes" => sprintf($this->_("See %s method of this class for more information."), "`setBatchMode()`"),
-			"collapsed" => 2,
+			"notes" => ($hasProMailer ? sprintf($this->_('When %1$s is installed, %2$s is recommended.'), "`ProMailer`", "`batchMode`") . "\n" : "") .
+				sprintf($this->_("See %s method of this class for more information."), "`setBatchMode()`"),
+			"collapsed" => ($hasProMailer ? 0 : 2),
 		]);
 
 		$fieldset->add([
