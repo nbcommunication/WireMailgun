@@ -164,20 +164,20 @@ $mg->setBatchMode(true)
 		"user@domain.com" => "A User", // "name" is inferred
 		"user2@domain.com" => [
 			"name" => "Another User",
-			"customvar" => "A custom variable",
+			"customVar" => "A custom variable",
 		],
 	])
 	->subject("Message Subject")
-	->bodyHTML("<p>Dear %recipient.name%,</p><p>Custom: %recipient.customVar%!</p>") 
+	->bodyHTML("<p>Dear %recipient.name%,</p><p>Custom: %recipient.customVar%!</p>")
 	->send();
 
 // to = A User <user@domain.com>, Another User <user2@domain.com>
-// recipientVariables = {"user@domain.com": {"name": "A User"}, "user@domain.com": {"name": "Another User", "customvar": "A custom variable"}}
+// recipientVariables = {"user@domain.com": {"name": "A User"}, "user@domain.com": {"name": "Another User", "customVar": "A custom variable"}}
 // bodyHTML[user@domain.com] = <p>Dear A User,</p><p>Custom: %recipient.customVar%!</p>
 // bodyHTML[user2@domain.com] = <p>Dear Another User,</p><p>Custom: A custom variable!</p>
 // %recipient.customVar% only prints for second email, so not a particularly useful example!
 
-// You can also use addRecipientVaiables to extend/override the inferred `recipientVariables` e.g.
+// You can also use `addRecipientVariables()` to extend/override the inferred `recipientVariables` e.g.
 $mg = $mail->new();
 $mg->to([
 		"user@domain.com" => "A User",
