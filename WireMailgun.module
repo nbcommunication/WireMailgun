@@ -31,7 +31,7 @@ class WireMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun API",
-			"version" => 116,
+			"version" => 117,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailgun",
@@ -267,7 +267,7 @@ class WireMailgun extends WireMail implements Module {
 	public function addRecipientVariables(array $recipients, $override = true) {
 		$i = count($this->recipientVariables);
 		foreach($recipients as $email => $data) {
-			$email = $this->wire("sanitizer")->email($email);
+			$email = strtolower(trim($this->wire("sanitizer")->email($email)));
 			if(!$email) continue;
 			if(!is_array($data)) $data = ["name" => $data];
 			if(array_key_exists($email, $this->recipientVariables)) {
@@ -1603,6 +1603,7 @@ class WireMailgun extends WireMail implements Module {
 	 *
 	 * @param array $data
 	 * @return string
+	 * @todo Improve folding
 	 *
 	 */
 	private function getRecipientVariables(array $data) {
