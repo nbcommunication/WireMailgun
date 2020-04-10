@@ -31,7 +31,7 @@ class WireMailgun extends WireMail implements Module {
 
 		return [
 			"title" => "WireMail Mailgun API",
-			"version" => 117,
+			"version" => 118,
 			"summary" => "Extends WireMail to use the Mailgun API for sending emails.",
 			"author" => "chriswthomson",
 			"href" => "https://github.com/chriswthomson/WireMailgun",
@@ -340,6 +340,27 @@ class WireMailgun extends WireMail implements Module {
 	public function setBatchMode(bool $batchMode) {
 		$this->batchMode = $batchMode;
 		return $this;
+	}
+
+	/**
+	 * Set campaign tracking tags
+	 *
+	 * @param bool $track Set to false to disable open and click tracking (default=true).
+	 * @return WireMail $this
+	 *
+	 */
+	public function setCampaign($track = true) {
+		$tags = [];
+		foreach(func_get_args() as $arg) {
+			if(is_string($arg)) {
+				$tags[] = $arg;
+			}
+		}
+		if($track && count($tags)) {
+			$this->setTrackClicks(true);
+			$this->setTrackOpens(true);
+		}
+		return $this->addTags($tags);
 	}
 
 	/**
