@@ -2,7 +2,7 @@
 Extends WireMail to use the Mailgun API for sending emails.
 
 # Installation
-1. Download the [zip file](https://github.com/chriswthomson/WireMailgun/archive/master.zip) at Github or clone the repo into your `site/modules` directory.
+1. Download the [zip file](https://github.com/nbcommunication/WireMailgun/archive/master.zip) at Github or clone the repo into your `site/modules` directory.
 2. If you downloaded the zip file, extract it in your `sites/modules` directory.
 3. In your admin, go to Modules > Refresh, then Modules > New, then click on the Install button for this module.
 
@@ -53,6 +53,11 @@ The following methods can be used in a chained statement:
 - Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. This module will split the recipients into batches if necessary. [Read more about batch sending](https://documentation.mailgun.com/user_manual.html#batch-sending).
 
 *This is set to on by default if ProMailer is installed.
+
+**setCampaign()** - Set campaign tracking tags.
+- An alias for `addTags()`
+- Each tag should be passed as an argument e.g. `setCampaign("campaign1", "campaign1-a")`
+- This sets tracking on by default. To disable this, pass `false` as the first argument
 
 **setDeliveryTime(**_int_ **$time)** - The (unix)time the email should be scheduled for.
 
@@ -128,6 +133,7 @@ $mg->cc("cc@domain.com")
 	->addInlineImage("/path/to/file-inline.jpg", "filename-inline.jpg") // Add inline image
 	->addTag("tag1") // Add a single tag
 	->addTags(["tag2", "tag3"]) // Add tags in a batch
+	->setCampaign("campaign1", "campaign1-a") // Set campaign tracking (tags)
 	->setBatchMode(false) // A single email will be sent, both "to" recipients shown
 	->setDeliveryTime(time() + 3600) // The email will be delivered in an hour
 	->setSender($domain, $key, "eu") // Use a different domain to send, this one in the EU region
@@ -215,6 +221,13 @@ if($mg->getHttpCode() == 200) {
 } else {
 	echo "Could not validate";
 }
+```
+
+## Optional
+
+If WireMailgun is the only WireMail module you have installed, then you can skip this step. However, if you have multiple WireMail modules installed, and you want WireMailgun to be the default one used by ProcessWire, then you should add the following to your /site/config.php file:
+```php
+$config->wireMail("module", "WireMailgun");
 ```
 
 ## WireMailMailgun
