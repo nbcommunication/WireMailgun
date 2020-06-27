@@ -28,7 +28,6 @@ class WireMailgun extends WireMail implements Module {
 	 *
 	 */
 	public static function getModuleInfo() {
-
 		return [
 			'title' => 'WireMail Mailgun API',
 			'version' => 120,
