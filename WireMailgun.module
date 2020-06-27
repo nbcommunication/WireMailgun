@@ -6,6 +6,9 @@
  * #pw-summary Extends WireMail to use the Mailgun API for sending emails
  * #pw-var $mg
  *
+ * @copyright 2020 NB Communication Ltd
+ * @license Mozilla Public License v2.0 http://mozilla.org/MPL/2.0/
+ *
  * @property string $apiKey
  * @property string $domain
  * @property string $region
@@ -32,7 +35,7 @@ class WireMailgun extends WireMail implements Module {
 			'title' => 'WireMail Mailgun API',
 			'version' => 120,
 			'summary' => 'Extends WireMail to use the Mailgun API for sending emails.',
-			'author' => 'chriswthomson',
+			'author' => 'nbcommunication',
 			'href' => 'https://github.com/nbcommunication/WireMailgun',
 			'singular' => false,
 			'autoload' => false,
