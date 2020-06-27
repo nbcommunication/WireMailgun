@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.2.0 (March ??, 2020)
+## 1.2.0 (June 27, 2020)
 
 ### Added
 - This changelog!
