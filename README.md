@@ -56,7 +56,7 @@ The following methods can be used in a chained statement:
 
 **setCampaign()** - Set campaign tracking tags.
 - An alias for `addTags()`
-- Each tag should be passed as an argument e.g. `setCampaign("campaign1", "campaign1-a")`
+- Each tag should be passed as an argument e.g. `setCampaign('campaign1', 'campaign1-a')`
 - This sets tracking on by default. To disable this, pass `false` as the first argument
 
 **setDeliveryTime(**_int_ **$time)** - The (unix)time the email should be scheduled for.
@@ -72,15 +72,15 @@ The following methods can be used in a chained statement:
 - A shortcut for calling `setDomainName()`, `setApiKey()` and `setRegion()`
 
 **setTestMode(**_bool_ **$testMode)** - Override the "Test Mode" module setting.
-- Disabled automatically for "Forgot Password" emails from ProcessWire
+- Disabled automatically for 'Forgot Password' emails from ProcessWire
 
 **setTrackOpens(**_bool_ **$trackOpens)** - Override "Track Message Opens" module setting on a per-email basis.
 - Open tracking only works for emails with `bodyHTML()` set
-- Disabled automatically for "Forgot Password" emails from ProcessWire
+- Disabled automatically for 'Forgot Password' emails from ProcessWire
 
 **setTrackClicks(**_bool_ **$trackClicks)** - Override "Track Message Clicks" module setting on a per-email basis.
 - Click tracking only works for emails with `bodyHTML()` set
-- Disabled automatically for "Forgot Password" emails from ProcessWire
+- Disabled automatically for 'Forgot Password' emails from ProcessWire
 
 ### Other
 
@@ -101,10 +101,10 @@ Send an email:
 
 ```php
 $mg = $mail->new();
-$sent = $mg->to("user@domain.com")
-	->from("you@company.com")
-	->subject("Message Subject")
-	->body("Message Body")
+$sent = $mg->to('user@domain.com')
+	->from('you@company.com')
+	->subject('Message Subject')
+	->body('Message Body')
 	->send();
 ```
 
@@ -115,28 +115,28 @@ $mg = $mail->new();
 
 // WireMail methods
 $mg->to([
-		"user@domain.com" => "A User",
-		"user2@domain.com" => "Another User",
+		'user@domain.com' => 'A User',
+		'user2@domain.com' => 'Another User',
 	])
-	->from("you@company.com", "Company Name")
-	->replyTo("reply@company.com", "Company Name")
-	->subject("Message Subject")
-	->bodyHTML("<p>Message Body</p>") // A text version will be automatically created
-	->header("key1", "value1")
-	->headers(["key2" => "value2"])
-	->attachment("/path/to/file.ext", "filename.ext");
+	->from('you@company.com', 'Company Name')
+	->replyTo('reply@company.com', 'Company Name')
+	->subject('Message Subject')
+	->bodyHTML('<p>Message Body</p>') // A text version will be automatically created
+	->header('key1', 'value1')
+	->headers(['key2' => 'value2'])
+	->attachment('/path/to/file.ext', 'filename.ext');
 
 // WireMailgun methods
-$mg->cc("cc@domain.com")
-	->bcc(["bcc@domain.com", "bcc2@domain.com"])
-	->addData("key", "value") // Custom X-Mailgun-Variables data
-	->addInlineImage("/path/to/file-inline.jpg", "filename-inline.jpg") // Add inline image
-	->addTag("tag1") // Add a single tag
-	->addTags(["tag2", "tag3"]) // Add tags in a batch
-	->setCampaign("campaign1", "campaign1-a") // Set campaign tracking (tags)
-	->setBatchMode(false) // A single email will be sent, both "to" recipients shown
+$mg->cc('cc@domain.com')
+	->bcc(['bcc@domain.com', 'bcc2@domain.com'])
+	->addData('key', 'value') // Custom X-Mailgun-Variables data
+	->addInlineImage('/path/to/file-inline.jpg', 'filename-inline.jpg') // Add inline image
+	->addTag('tag1') // Add a single tag
+	->addTags(['tag2', 'tag3']) // Add tags in a batch
+	->setCampaign('campaign1', 'campaign1-a') // Set campaign tracking (tags)
+	->setBatchMode(false) // A single email will be sent, both 'to' recipients shown
 	->setDeliveryTime(time() + 3600) // The email will be delivered in an hour
-	->setSender($domain, $key, "eu") // Use a different domain to send, this one in the EU region
+	->setSender($domain, $key, 'eu') // Use a different domain to send, this one in the EU region
 	->setTestMode(true) // Mailgun won't actually send the email
 	->setTrackOpens(false) // Disable tracking opens
 	->setTrackClicks(false); // Disable tracking clicks
@@ -144,20 +144,20 @@ $mg->cc("cc@domain.com")
 // Batch mode is set to false, so 1 returned if successful
 $numSent = $mg->send();
 
-echo "The email was " . ($numSent ? "" : "not ") . "sent.";
+echo 'The email was ' . ($numSent ? '' : 'not ') . 'sent.';
 ```
 
 ### Sending in Batch Mode
 ```php
-// If using batch mode, the recipient variable "name" is inferred from the `to` addresses, e.g.
+// If using batch mode, the recipient variable 'name' is inferred from the `to` addresses, e.g.
 $mg = $mail->new();
 $mg->to([
-		"user@domain.com" => "A User",
-		"user2@domain.com" => "Another User",
+		'user@domain.com' => 'A User',
+		'user2@domain.com' => 'Another User',
 	])
 	->setBatchMode(true)
-	->subject("Message Subject")
-	->bodyHTML("<p>Dear %recipient.name%,</p>")
+	->subject('Message Subject')
+	->bodyHTML('<p>Dear %recipient.name%,</p>')
 	->send();
 
 // to = A User <user@domain.com>, Another User <user2@domain.com>
@@ -169,18 +169,18 @@ $mg->to([
 $mg = $mail->new();
 $mg->setBatchMode(true)
 	->addRecipientVariables([
-		"user@domain.com" => "A User", // "name" is inferred
-		"user2@domain.com" => [
-			"name" => "Another User",
-			"customVar" => "A custom variable",
+		'user@domain.com' => 'A User', // 'name' is inferred
+		'user2@domain.com' => [
+			'name' => 'Another User',
+			'customVar' => 'A custom variable',
 		],
 	])
-	->subject("Message Subject")
-	->bodyHTML("<p>Dear %recipient.name%,</p><p>Custom: %recipient.customVar%!</p>")
+	->subject('Message Subject')
+	->bodyHTML('<p>Dear %recipient.name%,</p><p>Custom: %recipient.customVar%!</p>')
 	->send();
 
 // to = A User <user@domain.com>, Another User <user2@domain.com>
-// recipientVariables = {"user@domain.com": {"name": "A User"}, "user@domain.com": {"name": "Another User", "customVar": "A custom variable"}}
+// recipientVariables = {"user@domain.com": {'name': "A User"}, "user@domain.com": {'name': "Another User", 'customVar': "A custom variable"}}
 // bodyHTML[user@domain.com] = <p>Dear A User,</p><p>Custom: %recipient.customVar%!</p>
 // bodyHTML[user2@domain.com] = <p>Dear Another User,</p><p>Custom: A custom variable!</p>
 // %recipient.customVar% only prints for second email, so not a particularly useful example!
@@ -188,25 +188,25 @@ $mg->setBatchMode(true)
 // You can also use `addRecipientVariables()` to extend/override the inferred `recipientVariables` e.g.
 $mg = $mail->new();
 $mg->to([
-		"user@domain.com" => "A User",
-		"user2@domain.com" => "Another User",
+		'user@domain.com' => 'A User',
+		'user2@domain.com' => 'Another User',
 	])
 	->addRecipientVariables([
-		"user@domain.com" => [
-			"title" => "A User (title)",
+		'user@domain.com' => [
+			'title' => 'A User (title)',
 		],
-		"user2@domain.com" => [
-			"name" => "Another User (changed name)",
-			"title" => "Another User (title)",
+		'user2@domain.com' => [
+			'name' => 'Another User (changed name)',
+			'title' => 'Another User (title)',
 		],
 	])
 	->setBatchMode(true)
-	->subject("Message Subject")
-	->bodyHTML("<p>Dear %recipient.name%,</p><p>Title: %recipient.title%!</p>")
+	->subject('Message Subject')
+	->bodyHTML('<p>Dear %recipient.name%,</p><p>Title: %recipient.title%!</p>')
 	->send();
 
 // to = A User <user@domain.com>, Another User (changed name) <user2@domain.com>
-// recipientVariables = {"user@domain.com": {"name": "A User", "title": "A User (title)"}, "user@domain.com": {"name": "Another User (changed name)", "title": "Another User (title)"}}
+// recipientVariables = {"user@domain.com": {'name': "A User", 'title': "A User (title)"}, "user@domain.com": {'name': "Another User (changed name)", 'title': "Another User (title)"}}
 // bodyHTML[user@domain.com] = <p>Dear A User,</p><p>Title: A User (title)!</p>
 // bodyHTML[user2@domain.com] = <p>Dear Another User (changed name),</p><p>Title: Another User (title)!</p>
 ```
@@ -214,12 +214,12 @@ $mg->to([
 ### Validate an Email Address
 ```php
 $mg = $mail->new();
-$response = $mg->validateEmail("user@domain.com", false);
+$response = $mg->validateEmail('user@domain.com', false);
 
 if($mg->getHttpCode() == 200) {
-	echo $response->result == "deliverable" ? "Valid" : "Not valid";
+	echo $response->result == 'deliverable' ? 'Valid' : 'Not valid';
 } else {
-	echo "Could not validate";
+	echo 'Could not validate';
 }
 ```
 
@@ -227,7 +227,7 @@ if($mg->getHttpCode() == 200) {
 
 If WireMailgun is the only WireMail module you have installed, then you can skip this step. However, if you have multiple WireMail modules installed, and you want WireMailgun to be the default one used by ProcessWire, then you should add the following to your /site/config.php file:
 ```php
-$config->wireMail("module", "WireMailgun");
+$config->wireMail('module', 'WireMailgun');
 ```
 
 ## WireMailMailgun
