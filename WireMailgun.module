@@ -6,7 +6,7 @@
  * #pw-summary Extends WireMail to use the Mailgun API for sending emails
  * #pw-var $mg
  *
- * @copyright 2020 NB Communication Ltd
+ * @copyright 2022 NB Communication Ltd
  * @license Mozilla Public License v2.0 http://mozilla.org/MPL/2.0/
  *
  * @property string $apiKey
@@ -33,7 +33,7 @@ class WireMailgun extends WireMail implements Module {
 	public static function getModuleInfo() {
 		return [
 			'title' => 'WireMail Mailgun API',
-			'version' => 121,
+			'version' => 122,
 			'summary' => 'Extends WireMail to use the Mailgun API for sending emails.',
 			'author' => 'nbcommunication',
 			'href' => 'https://github.com/nbcommunication/WireMailgun',
@@ -520,9 +520,14 @@ class WireMailgun extends WireMail implements Module {
 			}
 
 			// Set CC recipients
-			if(count($this->mail['ccName'])) $data['cc'] = $this->getEmails($this->mail['ccName']);
+			if(isset($this->mail['ccName']) && count($this->mail['ccName'])) {
+				$data['cc'] = $this->getEmails($this->mail['ccName']);
+			}
+
 			// Set BCC recipients
-			if(count($this->mail['bccName'])) $data['bcc'] = $this->getEmails($this->mail['bccName']);
+			if(isset($this->mail['bccName']) && count($this->mail['bccName'])) {
+				$data['bcc'] = $this->getEmails($this->mail['bccName']);
+			}
 		}
 
 		// Reply to
@@ -535,7 +540,7 @@ class WireMailgun extends WireMail implements Module {
 		$data['subject'] = $this->mail['subject'];
 
 		// When sending a password reset email, prevent Test mode and Open/Click Tracking
-		if($data['subject'] == $this->wire('modules')->get('ProcessForgotPassword')->emailSubject) {
+		if($data['subject'] == $this->wire()->modules->get('ProcessForgotPassword')->emailSubject) {
 			$this->setTestMode(false);
 			$this->setTrackOpens(false);
 			$this->setTrackClicks(false);
@@ -587,7 +592,7 @@ class WireMailgun extends WireMail implements Module {
 		}
 
 		// Headers
-		if(count($this->mail['header'])) {
+		if(isset($this->mail['header']) && count($this->mail['header'])) {
 			foreach($this->mail['header'] as $header => $value) {
 				$data["h:{$header}"] = $value;
 			}
@@ -649,7 +654,7 @@ class WireMailgun extends WireMail implements Module {
 	public function validateEmail($email, $assoc = true) {
 
 		// Sanitize email and return false if not valid
-		$email = $this->wire('sanitizer')->email($email);
+		$email = $this->wire()->sanitizer->email($email);
 		if(empty($email)) return false;
 
 		// Get the API url (v4 validation must be the default 'us' endpoint)
@@ -807,24 +812,15 @@ class WireMailgun extends WireMail implements Module {
 	 * Sanitize a value to be used as a Mailgun variable
 	 *
 	 * @param mixed $value
-	 * @param int $length
 	 * @return string
 	 *
 	 */
-	protected function sanitize($value, $length = 128) {
-
-		// Encode, convert to ASCII
-		$value = filter_var(
-			$this->wire('sanitizer')->entities(trim($value)),
-			FILTER_SANITIZE_STRING,
-			FILTER_FLAG_STRIP_HIGH
-		);
-
-		// Return, truncate if $length
-		return $length ? $this->wire('sanitizer')->truncate($value, [
-			'maxLength' => $length,
+	protected function sanitize($value) {
+		// Encode, truncate and return
+		return $this->wire()->sanitizer->truncate($this->wire()->sanitizer->entities(trim($value)), [
+			'maxLength' => 128,
 			'more' => '',
-		]) : $value;
+		]);
 	}
 
 	/**
