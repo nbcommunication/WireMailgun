@@ -251,7 +251,10 @@ class WireMailgun extends WireMail implements Module {
 	 *
 	 */
 	public function addInlineImage($file, $filename = null) {
-		if(is_null($filename)) $filename = end(explode('/', $file));
+		if(is_null($filename)) {
+			$f = explode('/', $file);
+			$filename = $f[count($f) - 1];
+		}
 		$this->inline[$filename] = $file;
 		return $this;
 	}
