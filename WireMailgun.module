@@ -33,7 +33,7 @@ class WireMailgun extends WireMail implements Module {
 	public static function getModuleInfo() {
 		return [
 			'title' => 'WireMail Mailgun API',
-			'version' => 122,
+			'version' => 123,
 			'summary' => 'Extends WireMail to use the Mailgun API for sending emails.',
 			'author' => 'nbcommunication',
 			'href' => 'https://github.com/nbcommunication/WireMailgun',
