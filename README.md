@@ -82,6 +82,8 @@ The following methods can be used in a chained statement:
 - Click tracking only works for emails with `bodyHTML()` set
 - Disabled automatically for 'Forgot Password' emails from ProcessWire
 
+**useTemplate(**_string_ **$template**, _array_ **$variables)** - Use a Mailgun template.
+
 ### Other
 
 **send()** - Send the email.
@@ -139,7 +141,11 @@ $mg->cc('cc@domain.com')
 	->setSender($domain, $key, 'eu') // Use a different domain to send, this one in the EU region
 	->setTestMode(true) // Mailgun won't actually send the email
 	->setTrackOpens(false) // Disable tracking opens
-	->setTrackClicks(false); // Disable tracking clicks
+	->setTrackClicks(false) // Disable tracking clicks
+	->useTemplate('default', [
+		'subject' => 'Message Subject',
+		'bodyHTML' => '<p>Message Body</p>',
+	]);
 
 // Batch mode is set to false, so 1 returned if successful
 $numSent = $mg->send();
