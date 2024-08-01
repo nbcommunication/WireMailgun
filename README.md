@@ -32,7 +32,7 @@ The following methods can be used in a chained statement:
 **addInlineImage(**_string_ **$file**, _string_ **$filename)** - Add an inline image for referencing in HTML.
 - Reference using "cid:" e.g. `<img src='cid:filename.ext'>`
 - Requires `curl_file_create()` (PHP >= 5.5.0)
-- See https://documentation.mailgun.com/en/latest/user_manual.html#sending-inline-images for more information.
+- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#send-with-attachments for more information.
 
 **addRecipientVariables(**_array_ **$recipients)** - Add/override recipient variables.
 - `$recipients` should be an array of data, keyed by the recipient email address
@@ -91,7 +91,7 @@ The following methods can be used in a chained statement:
 
 **validateEmail(**_string_ **$email)** - Validates a single address using Mailgun's address validation service.
 - Returns an associative array. To return the response as an object, set the second argument to false
-- For more information on what this method returns, see [Mailgun's documentation](https://documentation.mailgun.com/en/latest/user_manual.html#email-validation-v4).
+- For more information on what this method returns, see [Mailgun's documentation](https://documentation.mailgun.com/docs/inboxready/mailgun-validate/single-valid-ir/).
 
 **getHttpCode()** - Get the API HTTP response code.
 - A response code of `200` indicates a successful response
