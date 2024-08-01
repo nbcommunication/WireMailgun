@@ -27,7 +27,7 @@ The following methods can be used in a chained statement:
 - Please refer to [WireMail::to()](https://processwire.com/api/ref/wire-mail/to/) for more information on how to use this method.
 
 **addData(**_string_ **$key**, _string_ **$value)** - Add custom data to the email.
-- See https://documentation.mailgun.com/en/latest/user_manual.html#attaching-data-to-messages for more information.
+- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#attaching-data-to-messages for more information.
 
 **addInlineImage(**_string_ **$file**, _string_ **$filename)** - Add an inline image for referencing in HTML.
 - Reference using "cid:" e.g. `<img src='cid:filename.ext'>`
@@ -36,7 +36,7 @@ The following methods can be used in a chained statement:
 
 **addRecipientVariables(**_array_ **$recipients)** - Add/override recipient variables.
 - `$recipients` should be an array of data, keyed by the recipient email address
-- See https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending for more information.
+- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#batch-sending for more information.
 
 **addTag(**_string_ **$tag)** - Add a tag to the email.
 - Only ASCII allowed
@@ -50,7 +50,7 @@ The following methods can be used in a chained statement:
 **setBatchMode(**_bool_ **$batchMode)** - Enables or disables batch mode.
 - This is off by default*, meaning that a single email is sent with each recipient seeing the other recipients
 - If this is on, any email addresses set by `cc()` and `bcc()` will be ignored
-- Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. This module will split the recipients into batches if necessary. [Read more about batch sending](https://documentation.mailgun.com/user_manual.html#batch-sending).
+- Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. This module will split the recipients into batches if necessary. [Read more about batch sending](https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#batch-sending).
 
 *This is set to on by default if ProMailer is installed.
 
