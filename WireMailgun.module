@@ -114,7 +114,7 @@ class WireMailgun extends WireMail implements Module {
 	/**
 	 * An array of recipient variables
 	 *
-	 * https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending
+	 * https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#batch-sending
 	 *
 	 * @var array
 	 *
@@ -236,7 +236,7 @@ class WireMailgun extends WireMail implements Module {
 	/**
 	 * Add custom data to the email
 	 *
-	 * See https://documentation.mailgun.com/en/latest/user_manual.html#attaching-data-to-messages
+	 * See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#attaching-data-to-messages
 	 *
 	 * @param string $key
 	 * @param string $value
@@ -251,7 +251,7 @@ class WireMailgun extends WireMail implements Module {
 	/**
 	 * Add an inline image for referencing in HTML
 	 *
-	 * See https://documentation.mailgun.com/en/latest/user_manual.html#sending-inline-images
+	 * See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#send-with-attachments
 	 *
 	 * @param string $file
 	 * @param string $filename
@@ -270,7 +270,7 @@ class WireMailgun extends WireMail implements Module {
 	/**
 	 * Add recipient variables
 	 *
-	 * See https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending
+	 * See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#batch-sending
 	 *
 	 * @param array $recipients
 	 * @param bool $override
@@ -299,7 +299,7 @@ class WireMailgun extends WireMail implements Module {
 	 * Will add up to 3 tags.
 	 * Any string passed to this function will be converted to ASCII and trimmed to be 128 characters long.
 	 *
-	 * See https://documentation.mailgun.com/user_manual.html#tagging
+	 * See https://documentation.mailgun.com/docs/mailgun/user-manual/tracking-messages/#tagging
 	 *
 	 * @param string $tag
 	 * @return WireMail $this
@@ -683,7 +683,7 @@ class WireMailgun extends WireMail implements Module {
 	 * Validates a single address using Mailgun's address validation service
 	 *
 	 * For more information on what this method returns, visit
-	 * https://documentation.mailgun.com/en/latest/user_manual.html#email-validation-v4
+	 * https://documentation.mailgun.com/docs/inboxready/mailgun-validate/single-valid-ir/
 	 *
 	 * @param string $email
 	 * @param bool $assoc Default is to return an array (specified by TRUE). If you want an object instead, specify FALSE.
