@@ -747,6 +747,10 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 			$this->httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 		}
 
+		if(PHP_MAJOR_VERSION < 8) {
+			curl_close($curl);
+		}
+
 		return $result;
 	}
 
