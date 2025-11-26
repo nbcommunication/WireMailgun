@@ -36,7 +36,7 @@ The following methods can be used in a chained statement:
 
 **addRecipientVariables(**_array_ **$recipients)** - Add/override recipient variables.
 - `$recipients` should be an array of data, keyed by the recipient email address
-- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/batch-sending for more information.
+- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/batch-sending#recipient-variables for more information.
 
 **addTag(**_string_ **$tag)** - Add a tag to the email.
 - Only ASCII allowed
