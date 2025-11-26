@@ -32,7 +32,7 @@ The following methods can be used in a chained statement:
 **addInlineImage(**_string_ **$file**, _string_ **$filename)** - Add an inline image for referencing in HTML.
 - Reference using "cid:" e.g. `<img src='cid:filename.ext'>`
 - Requires `curl_file_create()` (PHP >= 5.5.0)
-- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#send-with-attachments for more information.
+- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/send-attachments#send-with-attachments for more information.
 
 **addRecipientVariables(**_array_ **$recipients)** - Add/override recipient variables.
 - `$recipients` should be an array of data, keyed by the recipient email address
