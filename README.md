@@ -27,7 +27,7 @@ The following methods can be used in a chained statement:
 - Please refer to [WireMail::to()](https://processwire.com/api/ref/wire-mail/to/) for more information on how to use this method.
 
 **addData(**_string_ **$key**, _string_ **$value)** - Add custom data to the email.
-- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#attaching-data-to-messages for more information.
+- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/send-attachments for more information.
 
 **addInlineImage(**_string_ **$file**, _string_ **$filename)** - Add an inline image for referencing in HTML.
 - Reference using "cid:" e.g. `<img src='cid:filename.ext'>`
