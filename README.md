@@ -91,7 +91,7 @@ The following methods can be used in a chained statement:
 
 **validateEmail(**_string_ **$email)** - Validates a single address using Mailgun's address validation service.
 - Returns an associative array. To return the response as an object, set the second argument to false
-- For more information on what this method returns, see [Mailgun's documentation](https://documentation.mailgun.com/docs/inboxready/mailgun-validate/single-valid-ir/).
+- For more information on what this method returns, see [Mailgun's documentation](https://documentation.mailgun.com/docs/validate/single-valid-ir).
 
 **getHttpCode()** - Get the API HTTP response code.
 - A response code of `200` indicates a successful response
