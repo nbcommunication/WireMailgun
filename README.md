@@ -50,7 +50,7 @@ The following methods can be used in a chained statement:
 **setBatchMode(**_bool_ **$batchMode)** - Enables or disables batch mode.
 - This is off by default*, meaning that a single email is sent with each recipient seeing the other recipients
 - If this is on, any email addresses set by `cc()` and `bcc()` will be ignored
-- Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. This module will split the recipients into batches if necessary. [Read more about batch sending](https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#batch-sending).
+- Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. This module will split the recipients into batches if necessary. [Read more about batch sending](https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/batch-sending).
 
 *This is set to on by default if ProMailer is installed.
 
