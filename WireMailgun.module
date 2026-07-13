@@ -6,7 +6,7 @@
  * #pw-summary Extends WireMail to use the Mailgun API for sending emails
  * #pw-var $mg
  *
- * @copyright 2025 NB Communication Ltd
+ * @copyright 2026 NB Communication Ltd
  * @license Mozilla Public License v2.0 http://mozilla.org/MPL/2.0/
  *
  * @property string $apiKey
@@ -33,7 +33,7 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 	public static function getModuleInfo() {
 		return [
 			'title' => 'WireMail Mailgun API',
-			'version' => 125,
+			'version' => 130,
 			'summary' => 'Extends WireMail to use the Mailgun API for sending emails.',
 			'author' => 'nbcommunication',
 			'href' => 'https://github.com/nbcommunication/WireMailgun',
@@ -309,7 +309,7 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 		$tag = $this->sanitize($tag);
 		if(!empty($tag) and count($this->tags) < 3) {
 			$this->tags[] = $tag;
-		} else if(count($this->tags) >= 3) {
+		} else if(!empty($tag) and count($this->tags) >= 3) {
 			$this->log(sprintf($this->_('Error: Tried to use more than %1$d tags. Mailgun supports a maximum of %1$d at a time.'), 3));
 		}
 		return $this;
@@ -411,7 +411,10 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 	 */
 	public function setRegion($region) {
 		$region = strtolower($region);
-		if(isset(self::regions[$region])) $this->setApiUrl($region);
+		if(isset(self::regions[$region])) {
+			$this->setApiUrl($region);
+			$this->region = $region;
+		}
 		return $this;
 	}
 
@@ -510,7 +513,8 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 		if(!empty($this->mail['fromName'])) $fromName = $this->mail['fromName'];
 
 		// The 'from' email domain
-		$fromDomain = explode('@', $fromEmail)[1];
+		$fromEmailParts = explode('@', $fromEmail);
+		$fromDomain = isset($fromEmailParts[1]) ? $fromEmailParts[1] : '';
 
 		// Set the From field in the proper format
 		$data['from'] = "{$fromName} <{$fromEmail}>";
@@ -524,6 +528,16 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 			// Emulate the default to() method behavior.
 			if(isset($this->mail['toName'])) $this->addRecipientVariables($this->mail['toName'], false);
 
+			// cc/bcc addresses are ignored in Batch Mode - log this for clarity
+			foreach(['cc', 'bcc'] as $type) {
+				if(isset($this->mail["{$type}Name"]) && count($this->mail["{$type}Name"])) {
+					$this->log(sprintf(
+						$this->_('%1$s addresses are ignored when Batch Mode is enabled. The following addresses were set: %2$s'),
+						strtoupper($type),
+						implode(', ', array_keys($this->mail["{$type}Name"]))
+					));
+				}
+			}
 			// Mailgun hard limit on this calling style is 1000 recipients per request
 			if(count($this->recipientVariables) > self::batchLimit) {
 				$this->batchDefer = $this->recipientVariables;
@@ -567,7 +581,8 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 		$data['subject'] = $this->mail['subject'];
 
 		// When sending a password reset email, prevent Test mode and Open/Click Tracking
-		if($data['subject'] == $this->wire()->modules->get('ProcessForgotPassword')->emailSubject) {
+		$forgotPassword = $this->wire()->modules->get('ProcessForgotPassword');
+		if($forgotPassword && $data['subject'] == $forgotPassword->emailSubject) {
 			$this->setTestMode(false);
 			$this->setTrackOpens(false);
 			$this->setTrackClicks(false);
@@ -733,6 +748,8 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 			CURLOPT_RETURNTRANSFER => true,
 			CURLOPT_USERPWD => "api:{$this->apiKey}",
 			CURLOPT_SSL_VERIFYPEER => !$this->disableSslCheck,
+			CURLOPT_CONNECTTIMEOUT => 10,
+			CURLOPT_TIMEOUT => 30,
 		]);
 
 		if(count($options)) curl_setopt_array($curl, $options);
@@ -774,16 +791,22 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 		} else {
 			$result = json_decode($result);
 			$response = $this->getHttpCode();
+			$message = isset($result->message) ? $result->message : $this->_('Unknown error');
 			$code = sprintf($this->_('Code %d'), $response) . ': ';
 			switch($response) {
 				case 200:
 					return $this->batchMode && isset($data['recipient-variables']) ?
 						count(json_decode($data['recipient-variables'], 1)) : 1;
-					break;
 				case 400:
-					$this->log($code . sprintf($this->_('The parameters passed to the API were invalid - %s'), $result->message));
+					if($this->shouldRetryRecipientVariableSplit($message)) {
+						$sent = $this->splitBatchAndSend($data);
+						if($sent > 0) return $sent;
+					}
+					$this->log($code . sprintf(
+						$this->_('The parameters passed to the API were invalid - %s'),
+						$message
+					));
 					return 0;
-					break;
 				case 401:
 					$this->log($code . $this->_('Your credentials are incorrect.') . ' (' .
 						(!empty($this->apiKey) ?
@@ -792,23 +815,20 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 						) .
 					')');
 					return 0;
-					break;
 				case 402:
 					$this->log($code . $this->_('Parameters were valid but request failed. Try again.'));
 					return 0;
-					break;
 				case 404:
 					$this->log($code . $this->_('The endpoint you have tried to access does not exist. Check if the domain matches the domain you have configure on Mailgun.'));
 					return 0;
-					break;
 				case 413:
+					$sent = $this->splitBatchAndSend($data);
+					if($sent > 0) return $sent;
 					$this->log($code . $this->_('Payload too large, your total attachment size is too big.'));
 					return 0;
-					break;
 				default:
 					$this->log($code . $this->_('Mailgun Server Error.'));
 					return 0;
-					break;
 			}
 		}
 	}
@@ -858,7 +878,7 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 	 */
 	protected function sanitize($value) {
 		// Encode, truncate and return
-		return $this->wire()->sanitizer->truncate($this->wire()->sanitizer->entities(trim($value)), [
+		return $this->wire()->sanitizer->truncate($this->wire()->sanitizer->entities(trim((string) $value)), [
 			'maxLength' => 128,
 			'more' => '',
 		]);
@@ -946,13 +966,16 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 
 		if(function_exists('mime_content_type')) {
 
-			return mime_content_type($file);
+			$mimeType = mime_content_type($file);
+			if($mimeType === false) $this->log(sprintf($this->_('Mime type could not be found for %s.'), $file));
+			return $mimeType;
 
 		} else if(function_exists('finfo_open')) {
 
 			$finfo = finfo_open(FILEINFO_MIME);
 			$mimeType = finfo_file($finfo, $file);
 			finfo_close($finfo);
+			if($mimeType === false) $this->log(sprintf($this->_('Mime type could not be found for %s.'), $file));
 			return $mimeType;
 
 		} else {
@@ -1659,16 +1682,53 @@ class WireMailgun extends WireMail implements Module, ConfigurableModule {
 	}
 
 	/**
-	 * Get the recipient variables string, folded if required
+	 * Get the recipient variables JSON string
 	 *
 	 * @param array $data
 	 * @return string
-	 * @todo Improve folding
 	 *
 	 */
 	private function getRecipientVariables(array $data) {
-		$vars = json_encode($data);
-		if(strlen($vars) > 998) $vars = str_replace('},', "},\r\n", $vars);
-		return $vars;
+		return json_encode($data);
+	}
+
+	/**
+	 * Retry by splitting recipient variables if request-size style errors are returned.
+	 *
+	 * @param string $message
+	 * @return bool
+	 *
+	 */
+	private function shouldRetryRecipientVariableSplit($message) {
+		if(!$this->batchMode || empty($message)) return false;
+		return (bool) preg_match('/recipient[\s-]?variables|payload|too\s+(?:big|large)|size|limit/i', $message);
+	}
+
+	/**
+	 * Split a batch request into 2 smaller batch requests and send each.
+	 *
+	 * @param array $data
+	 * @return int Number of emails sent
+	 *
+	 */
+	private function splitBatchAndSend(array $data) {
+
+		if(!$this->batchMode || !isset($data['recipient-variables'])) return 0;
+
+		$recipientVariables = json_decode($data['recipient-variables'], true);
+		if(!is_array($recipientVariables) || count($recipientVariables) < 2) return 0;
+
+		$chunkSize = (int) ceil(count($recipientVariables) / 2);
+		$chunks = array_chunk($recipientVariables, $chunkSize, true);
+		$sent = 0;
+
+		foreach($chunks as $chunk) {
+			$chunkData = $data;
+			$chunkData['to'] = $this->getEmails($chunk);
+			$chunkData['recipient-variables'] = $this->getRecipientVariables($chunk);
+			$sent += $this->apiSend($chunkData);
+		}
+
+		return $sent;
 	}
 }

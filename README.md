@@ -1,9 +1,13 @@
 # WireMail Mailgun
 Extends WireMail to use the Mailgun API for sending emails.
 
+## Requirements
+* ProcessWire >= 3.0.123
+* PHP >= 5.6
+
 # Installation
 1. Download the [zip file](https://github.com/nbcommunication/WireMailgun/archive/master.zip) at Github or clone the repo into your `site/modules` directory.
-2. If you downloaded the zip file, extract it in your `sites/modules` directory.
+2. If you downloaded the zip file, extract it in your `site/modules` directory.
 3. In your admin, go to Modules > Refresh, then Modules > New, then click on the Install button for this module.
 
 # API
@@ -18,6 +22,8 @@ The following are extra methods implemented by this module:
 ### Chainable
 The following methods can be used in a chained statement:
 
+**Note:** As with `addInlineImage()` below, the standard WireMail `attachment()` method requires `curl_file_create()` (PHP >= 5.5.0) and will throw a `WireException` if it is not available.
+
 **cc(**_string|array|null_ **$email)** - Set a "cc" email address.
 - Only used when `$batchMode` is set to `false`.
 - Please refer to [WireMail::to()](https://processwire.com/api/ref/wire-mail/to/) for more information on how to use this method.
@@ -27,21 +33,22 @@ The following methods can be used in a chained statement:
 - Please refer to [WireMail::to()](https://processwire.com/api/ref/wire-mail/to/) for more information on how to use this method.
 
 **addData(**_string_ **$key**, _string_ **$value)** - Add custom data to the email.
-- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/send-attachments#attaching-metadata-to-messages for more information.
+- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#attaching-data-to-messages for more information.
 
 **addInlineImage(**_string_ **$file**, _string_ **$filename)** - Add an inline image for referencing in HTML.
 - Reference using "cid:" e.g. `<img src='cid:filename.ext'>`
 - Requires `curl_file_create()` (PHP >= 5.5.0)
-- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/send-attachments#send-with-attachments for more information.
+- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#send-with-attachments for more information.
 
 **addRecipientVariables(**_array_ **$recipients)** - Add/override recipient variables.
 - `$recipients` should be an array of data, keyed by the recipient email address
-- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/batch-sending#recipient-variables for more information.
+- See https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#batch-sending for more information.
 
 **addTag(**_string_ **$tag)** - Add a tag to the email.
 - Only ASCII allowed
 - Maximum length of 128 characters
 - There is a maximum number of 3 tags allowed per email.
+- See https://documentation.mailgun.com/docs/mailgun/user-manual/tracking-messages/#tagging for more information.
 
 **addTags(**_array_ **$tags)** - Add tags in a batch.
 
@@ -49,8 +56,8 @@ The following methods can be used in a chained statement:
 
 **setBatchMode(**_bool_ **$batchMode)** - Enables or disables batch mode.
 - This is off by default*, meaning that a single email is sent with each recipient seeing the other recipients
-- If this is on, any email addresses set by `cc()` and `bcc()` will be ignored
-- Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. This module will split the recipients into batches if necessary. [Read more about batch sending](https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/batch-sending).
+- If this is on, any email addresses set by `cc()` and `bcc()` will be ignored (a notice is logged when this happens)
+- Mailgun has a maximum hard limit of recipients allowed per batch of 1,000. This module will split the recipients into batches if necessary. [Read more about batch sending](https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/#batch-sending).
 
 *This is set to on by default if ProMailer is installed.
 
@@ -91,7 +98,7 @@ The following methods can be used in a chained statement:
 
 **validateEmail(**_string_ **$email)** - Validates a single address using Mailgun's address validation service.
 - Returns an associative array. To return the response as an object, set the second argument to false
-- For more information on what this method returns, see [Mailgun's documentation](https://documentation.mailgun.com/docs/validate/single-valid-ir).
+- For more information on what this method returns, see [Mailgun's documentation](https://documentation.mailgun.com/docs/inboxready/mailgun-validate/single-valid-ir/).
 
 **getHttpCode()** - Get the API HTTP response code.
 - A response code of `200` indicates a successful response
